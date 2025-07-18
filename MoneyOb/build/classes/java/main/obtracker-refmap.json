@@ -1,0 +1,40 @@
+{
+  "mappings": {
+    "com/noirtrou/obtracker/mixin/ChatHudMixin": {
+      "addMessage": "Lnet/minecraft/class_338;method_1812(Lnet/minecraft/class_2561;)V"
+    },
+    "com/noirtrou/obtracker/mixin/InGameHudMixin": {
+      "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V",
+      "setSubtitle": "Lnet/minecraft/class_329;method_34002(Lnet/minecraft/class_2561;)V",
+      "setTitle": "Lnet/minecraft/class_329;method_34004(Lnet/minecraft/class_2561;)V"
+    },
+    "com/noirtrou/obtracker/mixin/TitleCaptureMixin": {
+      "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V",
+      "setSubtitle": "Lnet/minecraft/class_329;method_34002(Lnet/minecraft/class_2561;)V",
+      "setTitle": "Lnet/minecraft/class_329;method_34004(Lnet/minecraft/class_2561;)V"
+    },
+    "com/noirtrou/obtracker/mixin/TitlePacketMixin": {
+      "onTitle": "Lnet/minecraft/class_634;method_34083(Lnet/minecraft/class_5904;)V"
+    }
+  },
+  "data": {
+    "named:intermediary": {
+      "com/noirtrou/obtracker/mixin/ChatHudMixin": {
+        "addMessage": "Lnet/minecraft/class_338;method_1812(Lnet/minecraft/class_2561;)V"
+      },
+      "com/noirtrou/obtracker/mixin/InGameHudMixin": {
+        "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V",
+        "setSubtitle": "Lnet/minecraft/class_329;method_34002(Lnet/minecraft/class_2561;)V",
+        "setTitle": "Lnet/minecraft/class_329;method_34004(Lnet/minecraft/class_2561;)V"
+      },
+      "com/noirtrou/obtracker/mixin/TitleCaptureMixin": {
+        "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V",
+        "setSubtitle": "Lnet/minecraft/class_329;method_34002(Lnet/minecraft/class_2561;)V",
+        "setTitle": "Lnet/minecraft/class_329;method_34004(Lnet/minecraft/class_2561;)V"
+      },
+      "com/noirtrou/obtracker/mixin/TitlePacketMixin": {
+        "onTitle": "Lnet/minecraft/class_634;method_34083(Lnet/minecraft/class_5904;)V"
+      }
+    }
+  }
+}
