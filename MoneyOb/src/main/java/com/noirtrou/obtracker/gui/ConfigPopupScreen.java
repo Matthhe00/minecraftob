@@ -195,6 +195,23 @@ public class ConfigPopupScreen extends Screen {
         int resetTextX = resetButtonX + (resetButtonWidth - resetTextWidth) / 2;
         int resetTextY = resetButtonY + 3;
         context.drawText(this.textRenderer, resetText, resetTextX, resetTextY, 0xFFFF9900, false);
+        
+        // Texte "by : 实 NoirTrou 实" en bas du popup
+        int byTextY = popupY + popupHeight - 15; // Position en bas du popup
+        String byPrefix = "by : 实 ";
+        String authorName = "NoirTrou";
+        
+        // Calculer la largeur totale pour centrer
+        int prefixWidth = this.textRenderer.getWidth(byPrefix);
+        int authorWidth = this.textRenderer.getWidth(authorName);
+        int totalWidth = prefixWidth + authorWidth;
+        
+        // Position centrée
+        int startX = popupX + (POPUP_WIDTH - totalWidth) / 2;
+        
+        // Dessiner les parties séparément pour le formatage
+        context.drawText(this.textRenderer, Text.literal(byPrefix), startX, byTextY, 0xAAAAAA, false);
+        context.drawText(this.textRenderer, Text.literal("§l" + authorName), startX + prefixWidth, byTextY, 0xFFFFFF, false);
     }
 
     private void drawCenteredText(DrawContext context, Text text, int centerX, int y, int color) {

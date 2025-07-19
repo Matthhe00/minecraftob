@@ -81,7 +81,15 @@ public class TitleListener {
                     LocalDateTime.now().format(TIME_FORMATTER), titleCounter, titleText);
                 logToFile(logEntry);
                 
-                com.noirtrou.obtracker.tracker.DataTracker.addIslandLevel(1);
+                // Optimisation: ne compter que les titres contenant le caractère 隔
+                if (titleText.contains("隔")) {
+                    // Ajouter au compteur d'île seulement pour les titres avec 隔
+                    com.noirtrou.obtracker.tracker.DataTracker.addIslandLevel(1);
+                    logToFile("  -> TITRE AVEC 隔 DÉTECTÉ - Ajouté au compteur d'île");
+                } else {
+                    logToFile("  -> TITRE SANS 隔 - Non compté dans les statistiques d'île");
+                }
+                
                 analyzeTitle(titleText);
             }
         }
@@ -150,6 +158,11 @@ public class TitleListener {
     // Méthode pour analyser automatiquement un titre
     private static void analyzeTitle(String titleText) {
         List<String> types = new ArrayList<>();
+        
+        // Détection prioritaire du caractère 隔 pour l'optimisation
+        if (titleText.contains("隔")) {
+            types.add("NIVEAU_ÎLE_隔");
+        }
         
         if (titleText.toLowerCase().contains("niveau")) {
             types.add("NIVEAU");
