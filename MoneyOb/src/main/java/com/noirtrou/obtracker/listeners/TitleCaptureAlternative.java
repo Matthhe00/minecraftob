@@ -19,7 +19,6 @@ public class TitleCaptureAlternative {
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     
     public static void register() {
-        System.out.println("[ObTracker] TitleCaptureAlternative enregistré");
         
         // Créer le fichier de log
         createLogFile();
@@ -34,7 +33,6 @@ public class TitleCaptureAlternative {
                 
                 String logEntry = String.format("[%s] MESSAGE OVERLAY CAPTURÉ: %s", 
                                               LocalDateTime.now().format(TIME_FORMATTER), messageText);
-                System.out.println("[ObTracker] " + logEntry);
                 logToFile(logEntry);
                 
                 // Analyser le message
@@ -51,7 +49,6 @@ public class TitleCaptureAlternative {
                 if (isInterestingMessage(messageText)) {
                     String logEntry = String.format("[%s] MESSAGE INTÉRESSANT CAPTURÉ: %s", 
                                                   LocalDateTime.now().format(TIME_FORMATTER), messageText);
-                    System.out.println("[ObTracker] " + logEntry);
                     logToFile(logEntry);
                     
                     analyzeMessage(messageText);

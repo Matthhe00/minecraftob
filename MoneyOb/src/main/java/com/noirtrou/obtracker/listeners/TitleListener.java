@@ -1,12 +1,8 @@
 package com.noirtrou.obtracker.listeners;
 
-import net.fabricmc.fabric.api.client.rendering.v1.HudRenderCallback;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.text.Text;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -24,66 +20,22 @@ public class TitleListener {
     private static final String LOG_FILE_PATH = "run/title_capture.log";
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
     
-    // Variables pour tracker les titres précédents et le timestamp
-    private static Text lastTitle = null;
-    private static Text lastSubtitle = null;
-    private static Text lastActionBar = null;
-    private static String lastTitleText = null;
-    private static long lastTitleTimestamp = 0L; // en ms
+    // Variables pour l'écoute instantanée des événements MIXIN uniquement
+    private static long titleCounter = 0L;
+    private static long subtitleCounter = 0L;
+    private static long actionBarCounter = 0L;
     
     public static void register() {
-        System.out.println("[ObTracker] TitleListener enregistré avec événements HUD");
+        // Initialiser le DataTracker pour s'assurer que tout part à 0
+        com.noirtrou.obtracker.tracker.DataTracker.initialize();
         
         // Créer le fichier de log
         createLogFile();
         logToFile("=== SESSION DÉMARRÉE À " + LocalDateTime.now().format(TIME_FORMATTER) + " ===");
+        logToFile("MODE: Capture par mixins (interception directe des paquets/méthodes HUD)");
         
-        // Enregistrer le callback de rendu HUD pour capturer les titres
-        HudRenderCallback.EVENT.register((drawContext, tickDelta) -> {
-            MinecraftClient client = MinecraftClient.getInstance();
-            if (client != null && client.inGameHud != null) {
-                checkForTitleChanges(client.inGameHud);
-            }
-        });
-    }
-    
-    // Vérifier les changements de titre en utilisant la réflexion
-    private static void checkForTitleChanges(net.minecraft.client.gui.hud.InGameHud inGameHud) {
-        try {
-            Field[] fields = inGameHud.getClass().getDeclaredFields();
-            for (Field field : fields) {
-                field.setAccessible(true);
-                Object value = field.get(inGameHud);
-                if (value instanceof Text) {
-                    Text textValue = (Text) value;
-                    String textContent = textValue.getString();
-                    long now = System.currentTimeMillis();
-                    // Log et capture si le titre est nouveau OU si le même texte est ré-envoyé après un délai minimal
-                    if (field.getName().toLowerCase().contains("title")) {
-                        boolean isNewTitle = lastTitleText == null || !lastTitleText.equals(textContent);
-                        boolean isTimeout = (now - lastTitleTimestamp) > 500; // 500ms entre deux détections identiques
-                        if (isNewTitle || isTimeout) {
-                            System.out.println("[ObTracker][EVENT] Titre détecté: " + textContent + (isNewTitle ? " (nouveau)" : " (répétition)"));
-                            onTitleReceived(textValue);
-                            lastTitleText = textContent;
-                            lastTitleTimestamp = now;
-                        }
-                    } else if (field.getName().toLowerCase().contains("subtitle")) {
-                        if (lastSubtitle == null || !lastSubtitle.getString().equals(textContent)) {
-                            onSubtitleReceived(textValue);
-                        }
-                        lastSubtitle = textValue;
-                    } else if (field.getName().toLowerCase().contains("overlay") || field.getName().toLowerCase().contains("actionbar")) {
-                        if (lastActionBar == null || !lastActionBar.getString().equals(textContent)) {
-                            onActionBarReceived(textValue);
-                        }
-                        lastActionBar = textValue;
-                    }
-                }
-            }
-        } catch (Exception e) {
-            // Ignorer les erreurs de réflexion pour éviter le spam
-        }
+        // Plus besoin d'enregistrer un callback HUD - les mixins s'en occupent
+        // Les événements arrivent directement via onTitleReceived(), onSubtitleReceived(), onActionBarReceived()
     }
     
     // Méthode pour logger toutes les détections
@@ -94,61 +46,80 @@ public class TitleListener {
         String logEntry = String.format("[%s] DÉTECTION MÉTHODE: %s | Contenu: %s", 
                                       timestamp, methodName, contentStr);
         
-        System.out.println("[ObTracker] " + logEntry);
         logToFile(logEntry);
     }
     
-    // Méthodes appelées par les mixins
+    // Suppression de la déduplication - traiter TOUS les événements
+    private static boolean shouldProcessTitle(String titleText) {
+        // Toujours traiter chaque événement, même si identique
+        return true;
+    }
+    
+    private static boolean shouldProcessSubtitle(String subtitleText) {
+        // Toujours traiter chaque événement, même si identique
+        return true;
+    }
+    
+    private static boolean shouldProcessActionBar(String actionBarText) {
+        // Toujours traiter chaque événement, même si identique
+        return true;
+    }
+    
+    // Méthodes pour mixins (utilisées par TitleCaptureMixin)
     public static void onTitleReceived(Text title) {
         if (title != null) {
             String titleText = title.getString();
-            long now = System.currentTimeMillis();
-            boolean isNewTitle = lastTitleText == null || !lastTitleText.equals(titleText);
-            boolean isTimeout = (now - lastTitleTimestamp) > 500;
-            // Compte si nouveau titre OU si le même texte est ré-envoyé après délai
-            if (isNewTitle || isTimeout) {
+            
+            // Traiter chaque événement sans déduplication
+            if (shouldProcessTitle(titleText)) {
+                titleCounter++;
+                
                 capturedTitles.add(titleText);
                 limitHistory(100);
-                String logEntry = String.format("[%s] TITRE CAPTURÉ: %s", LocalDateTime.now().format(TIME_FORMATTER), titleText);
+                
+                String logEntry = String.format("[%s] TITRE MIXIN #%d: %s", 
+                    LocalDateTime.now().format(TIME_FORMATTER), titleCounter, titleText);
                 logToFile(logEntry);
-                // Incrémenter le niveau d'île à chaque titre détecté
+                
                 com.noirtrou.obtracker.tracker.DataTracker.addIslandLevel(1);
-                // Analyser automatiquement le titre
                 analyzeTitle(titleText);
-                lastTitleText = titleText;
-                lastTitleTimestamp = now;
             }
         }
     }
-    
+
     public static void onSubtitleReceived(Text subtitle) {
         if (subtitle != null) {
             String subtitleText = subtitle.getString();
-            capturedSubtitles.add(subtitleText);
-            limitHistory(100);
             
-            String logEntry = String.format("[%s] SOUS-TITRE CAPTURÉ: %s", 
-                                          LocalDateTime.now().format(TIME_FORMATTER), subtitleText);
-            System.out.println("[ObTracker] " + logEntry);
-            logToFile(logEntry);
-            
-            analyzeSubtitle(subtitleText);
+            if (shouldProcessSubtitle(subtitleText)) {
+                subtitleCounter++;
+                
+                capturedSubtitles.add(subtitleText);
+                limitHistory(100);
+                
+                String logEntry = String.format("[%s] SOUS-TITRE MIXIN #%d: %s", 
+                                              LocalDateTime.now().format(TIME_FORMATTER), subtitleCounter, subtitleText);
+                logToFile(logEntry);
+                analyzeSubtitle(subtitleText);
+            }
         }
     }
-    
+
     public static void onActionBarReceived(Text actionBar) {
         if (actionBar != null) {
             String actionBarText = actionBar.getString();
-            capturedActionBars.add(actionBarText);
-            limitHistory(100);
             
-            String logEntry = String.format("[%s] ACTION BAR CAPTURÉE: %s", 
-                                          LocalDateTime.now().format(TIME_FORMATTER), actionBarText);
-            System.out.println("[ObTracker] " + logEntry);
-            logToFile(logEntry);
-            
-            // Analyser automatiquement l'action bar
-            analyzeActionBar(actionBarText);
+            if (shouldProcessActionBar(actionBarText)) {
+                actionBarCounter++;
+                
+                capturedActionBars.add(actionBarText);
+                limitHistory(100);
+                
+                String logEntry = String.format("[%s] ACTION BAR MIXIN #%d: %s", 
+                                              LocalDateTime.now().format(TIME_FORMATTER), actionBarCounter, actionBarText);
+                logToFile(logEntry);
+                analyzeActionBar(actionBarText);
+            }
         }
     }
     
@@ -306,18 +277,38 @@ public class TitleListener {
             capturedActionBars.remove(0);
         }
     }
-    
-    // Méthode pour obtenir des statistiques détaillées
+     // Méthode pour obtenir des statistiques détaillées
     public static void logStatistics() {
         String timestamp = LocalDateTime.now().format(TIME_FORMATTER);
         logToFile("=== STATISTIQUES [" + timestamp + "] ===");
-        logToFile("Titres capturés: " + capturedTitles.size());
-        logToFile("Sous-titres capturés: " + capturedSubtitles.size());
-        logToFile("Action bars capturées: " + capturedActionBars.size());
+        logToFile("Titres capturés: " + capturedTitles.size() + " (Compteur total: " + titleCounter + ")");
+        logToFile("Sous-titres capturés: " + capturedSubtitles.size() + " (Compteur total: " + subtitleCounter + ")");
+        logToFile("Action bars capturées: " + capturedActionBars.size() + " (Compteur total: " + actionBarCounter + ")");
         logToFile("=======================================");
     }
-    
+
     public static int getTitleCount() {
         return capturedTitles.size();
+    }
+
+    // Nouvelles méthodes pour accéder aux compteurs d'écoute instantanée
+    public static long getTotalTitleCounter() {
+        return titleCounter;
+    }
+
+    public static long getTotalSubtitleCounter() {
+        return subtitleCounter;
+    }
+
+    public static long getTotalActionBarCounter() {
+        return actionBarCounter;
+    }
+
+    // Méthode pour remettre à zéro les compteurs
+    public static void resetCounters() {
+        titleCounter = 0;
+        subtitleCounter = 0;
+        actionBarCounter = 0;
+        logToFile("COMPTEURS REMIS À ZÉRO");
     }
 }

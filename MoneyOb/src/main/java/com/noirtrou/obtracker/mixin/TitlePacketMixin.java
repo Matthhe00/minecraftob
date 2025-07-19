@@ -18,6 +18,5 @@ public class TitlePacketMixin {
         
         // Note: Les méthodes exactes dépendent de la version de Minecraft
         // Cette approche alternative capture les paquets de titre directement
-        System.out.println("[ObTracker] Paquet de titre intercepté: " + packet.getClass().getSimpleName());
     }
 }

@@ -11,6 +11,8 @@ public class KeyListener {
     private static boolean wasUPressed = false;
     private static boolean wasTPressed = false;
     private static boolean wasLPressed = false;
+    private static boolean wasRPressed = false;
+    private static boolean wasYPressed = false;
 
     public static void register() {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -29,12 +31,10 @@ public class KeyListener {
                 // Touche T pour afficher les titres capturés (pour test)
                 boolean tPressed = org.lwjgl.glfw.GLFW.glfwGetKey(window, GLFW.GLFW_KEY_T) == GLFW.GLFW_PRESS;
                 if (tPressed && !wasTPressed) {
-                    System.out.println("[ObTracker] === RAPPORT DE CAPTURE ===");
                     TitleListener.logStatistics();
                     TitleAnalyzer.printRecentTitles(3);
                     TitleAnalyzer.printRecentActionBars(3);
                     TitleAnalyzer.analyzeAllCapturedContent();
-                    System.out.println("[ObTracker] Voir le fichier: run/title_capture.log");
                 }
                 wasTPressed = tPressed;
                 
@@ -42,9 +42,23 @@ public class KeyListener {
                 boolean lPressed = org.lwjgl.glfw.GLFW.glfwGetKey(window, GLFW.GLFW_KEY_L) == GLFW.GLFW_PRESS;
                 if (lPressed && !wasLPressed) {
                     TitleListener.clearHistory();
-                    System.out.println("[ObTracker] Historique nettoyé!");
                 }
                 wasLPressed = lPressed;
+                
+                // Touche R pour réinitialiser les compteurs d'écoute instantanée
+                boolean rPressed = org.lwjgl.glfw.GLFW.glfwGetKey(window, GLFW.GLFW_KEY_R) == GLFW.GLFW_PRESS;
+                if (rPressed && !wasRPressed) {
+                    TitleListener.resetCounters();
+                }
+                wasRPressed = rPressed;
+                
+                // Touche Y pour test manuel d'événement de titre
+                boolean yPressed = org.lwjgl.glfw.GLFW.glfwGetKey(window, GLFW.GLFW_KEY_Y) == GLFW.GLFW_PRESS;
+                if (yPressed && !wasYPressed) {
+                    net.minecraft.text.Text testTitle = net.minecraft.text.Text.literal("Test Manuel - Île Niveau " + System.currentTimeMillis() % 1000);
+                    TitleListener.onTitleReceived(testTitle);
+                }
+                wasYPressed = yPressed;
             }
         });
     }

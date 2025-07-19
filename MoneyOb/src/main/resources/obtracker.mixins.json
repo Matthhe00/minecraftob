@@ -6,6 +6,8 @@
   ],
   "client": [
     "ChatHudMixin",
-    "TitleCaptureMixin"
+    "TitleCaptureMixin",
+    "TitlePacketHandlerMixin",
+    "ActionBarMixin"
   ]
 }

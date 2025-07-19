@@ -4,13 +4,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class DataTracker {
-    // Tracking Niveau d'île
+    // Tracking Niveau d'île avec session propre
     private static final List<Integer> islandLevels = new ArrayList<>();
     private static int sessionIslandLevel = 0;
+    private static long islandSessionStart = System.currentTimeMillis();
 
     public static void addIslandLevel(int level) {
         islandLevels.add(level);
         sessionIslandLevel += level;
+        // Démarrer la session île au premier événement si pas encore démarrée
+        if (islandLevels.size() == 1) {
+            islandSessionStart = System.currentTimeMillis();
+        }
         lastUpdate = System.currentTimeMillis();
     }
     public static int getTotalIslandLevel() {
@@ -26,30 +31,35 @@ public class DataTracker {
         return getTotalIslandLevel() / (double)size;
     }
     public static double getIslandLevelPerHour() {
-        double hours = getSessionDuration() / 3600.0;
+        double hours = getIslandSessionDuration() / 3600.0;
         return hours > 0 ? getTotalIslandLevel() / hours : 0;
     }
     public static double getIslandLevelPerMinute() {
-        double minutes = getSessionDuration() / 60.0;
+        double minutes = getIslandSessionDuration() / 60.0;
         return minutes > 0 ? getTotalIslandLevel() / minutes : 0;
     }
+    public static long getIslandSessionDuration() {
+        if (islandLevels.isEmpty()) return 0;
+        return (System.currentTimeMillis() - islandSessionStart) / 1000;
+    }
+    
+    // Tracking Minions avec session propre
     private static double lastBalance = 0;
     private static final List<Double> minionGains = new ArrayList<>();
     private static final List<Integer> minionObjects = new ArrayList<>();
-    private static long sessionStart = System.currentTimeMillis();
+    private static long minionSessionStart = System.currentTimeMillis();
     private static long lastUpdate = System.currentTimeMillis();
     private static double sessionGain = 0;
     private static int sessionObjects = 0;
-    private static long globalSessionStart = System.currentTimeMillis();
 
     public static double getLastBalance() { return lastBalance; }
     public static double getSessionGain() { return sessionGain; }
-    public static long getSessionDuration() { return (System.currentTimeMillis() - sessionStart) / 1000; }
-    public static long getGlobalSessionDuration() {
-        return (System.currentTimeMillis() - globalSessionStart) / 1000;
+    public static long getMinionSessionDuration() {
+        if (minionGains.isEmpty()) return 0;
+        return (System.currentTimeMillis() - minionSessionStart) / 1000;
     }
     public static double getGainPerHour() {
-        double hours = getSessionDuration() / 3600.0;
+        double hours = getMinionSessionDuration() / 3600.0;
         return hours > 0 ? sessionGain / hours : 0;
     }
     public static double getAverageGain() {
@@ -97,24 +107,28 @@ public class DataTracker {
     }
     // Ajout des méthodes pour OverlayRenderer
     public static double getMinionGainPerHour() {
-        double hours = getSessionDuration() / 3600.0;
+        double hours = getMinionSessionDuration() / 3600.0;
         return hours > 0 ? getTotalMinionGains() / hours : 0;
     }
     public static double getObjectsPerHour() {
-        double hours = getSessionDuration() / 3600.0;
+        double hours = getMinionSessionDuration() / 3600.0;
         return hours > 0 ? getTotalObjects() / hours : 0;
     }
     public static double getMinionGainPerMinute() {
-        double minutes = getSessionDuration() / 60.0;
+        double minutes = getMinionSessionDuration() / 60.0;
         return minutes > 0 ? getTotalMinionGains() / minutes : 0;
     }
     public static double getObjectsPerMinute() {
-        double minutes = getSessionDuration() / 60.0;
+        double minutes = getMinionSessionDuration() / 60.0;
         return minutes > 0 ? getTotalObjects() / minutes : 0;
     }
     public static void addMinionGain(double gain) {
         minionGains.add(gain);
         sessionGain += gain;
+        // Démarrer la session minion au premier événement si pas encore démarrée
+        if (minionGains.size() == 1) {
+            minionSessionStart = System.currentTimeMillis();
+        }
         lastUpdate = System.currentTimeMillis();
     }
     public static void addMinionObject(int obj) {
@@ -125,11 +139,51 @@ public class DataTracker {
     public static void clearHistory() {
         islandLevels.clear();
         sessionIslandLevel = 0;
+        islandSessionStart = System.currentTimeMillis();
         minionGains.clear();
         minionObjects.clear();
         sessionGain = 0;
         sessionObjects = 0;
-        sessionStart = System.currentTimeMillis();
+        minionSessionStart = System.currentTimeMillis();
         lastUpdate = System.currentTimeMillis();
+    }
+    
+    public static void clearIslandHistory() {
+        islandLevels.clear();
+        sessionIslandLevel = 0;
+        islandSessionStart = System.currentTimeMillis();
+        lastUpdate = System.currentTimeMillis();
+    }
+    
+    public static void clearMinionHistory() {
+        minionGains.clear();
+        minionObjects.clear();
+        sessionGain = 0;
+        sessionObjects = 0;
+        minionSessionStart = System.currentTimeMillis();
+        lastUpdate = System.currentTimeMillis();
+    }
+    
+    // Méthode pour s'assurer que tout démarre à 0
+    public static void initialize() {
+        // Les variables sont déjà initialisées à 0 par défaut, mais on peut forcer si nécessaire
+        if (!islandLevels.isEmpty()) {
+            islandLevels.clear();
+        }
+        if (sessionIslandLevel != 0) {
+            sessionIslandLevel = 0;
+        }
+        if (!minionGains.isEmpty()) {
+            minionGains.clear();
+        }
+        if (!minionObjects.isEmpty()) {
+            minionObjects.clear();
+        }
+        if (sessionGain != 0) {
+            sessionGain = 0;
+        }
+        if (sessionObjects != 0) {
+            sessionObjects = 0;
+        }
     }
 }

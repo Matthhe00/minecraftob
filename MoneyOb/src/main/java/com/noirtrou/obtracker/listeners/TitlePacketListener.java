@@ -36,7 +36,6 @@ public class TitlePacketListener {
     private static int totalActionBarsDetected = 0;
     
     public static void register() {
-        System.out.println("[ObTracker] TitlePacketListener enregistré - Capture par paquets réseau");
         
         // Créer le fichier de log
         createLogFile();
@@ -58,7 +57,6 @@ public class TitlePacketListener {
         try {
             // Note: L'interception directe des paquets peut nécessiter des mixins
             // Cette version utilise une approche alternative avec tick events
-            System.out.println("[ObTracker] Handlers de paquets configurés");
         } catch (Exception e) {
             System.err.println("[ObTracker] Erreur lors de l'enregistrement des handlers: " + e.getMessage());
             logToFile("ERREUR: " + e.getMessage());
@@ -113,7 +111,6 @@ public class TitlePacketListener {
                                        analysis, titleText);
         
         logToFile(logEntry);
-        System.out.println("[ObTracker] " + logEntry);
     }
     
     public static void onSubtitleReceived(Text subtitle) {
@@ -131,7 +128,6 @@ public class TitlePacketListener {
                                        analysis, subtitleText);
         
         logToFile(logEntry);
-        System.out.println("[ObTracker] " + logEntry);
     }
     
     public static void onActionBarReceived(Text actionBar) {
@@ -149,7 +145,6 @@ public class TitlePacketListener {
                                        analysis, actionBarText);
         
         logToFile(logEntry);
-        System.out.println("[ObTracker] " + logEntry);
     }
     
     // Méthodes d'analyse du contenu
@@ -248,7 +243,6 @@ public class TitlePacketListener {
             totalTitlesDetected + totalSubtitlesDetected + totalActionBarsDetected
         );
         
-        System.out.println("[ObTracker] " + stats);
         logToFile(stats);
     }
     
@@ -258,7 +252,6 @@ public class TitlePacketListener {
         capturedActionBars.clear();
         
         logToFile("=== HISTORIQUE NETTOYÉ À " + LocalDateTime.now().format(TIME_FORMATTER) + " ===");
-        System.out.println("[ObTracker] Historique de capture nettoyé");
     }
     
     // Système de logging
@@ -275,7 +268,6 @@ public class TitlePacketListener {
                 Files.createFile(logPath);
             }
             
-            System.out.println("[ObTracker] Fichier de log créé: " + logPath.toAbsolutePath());
         } catch (IOException e) {
             System.err.println("[ObTracker] Erreur lors de la création du fichier de log: " + e.getMessage());
         }

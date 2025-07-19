@@ -2,7 +2,6 @@ package com.noirtrou.obtracker.listeners;
 
 import com.noirtrou.obtracker.tracker.DataTracker;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.minecraft.text.Text;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -12,6 +11,8 @@ public class ChatListener {
     public static void register() {
         ClientReceiveMessageEvents.GAME.register((message, overlay) -> {
             String msg = message.getString();
+            
+            // Traitement des gains de minions
             Matcher matcher = GAIN_PATTERN.matcher(msg);
             if (matcher.find()) {
                 double amount = Double.parseDouble(matcher.group(1).replace(",", ""));
