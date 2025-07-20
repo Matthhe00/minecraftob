@@ -57,6 +57,9 @@ public class DataTracker {
     private static double sessionSellGain = 0;
     private static long sellSessionStart = System.currentTimeMillis();
     
+    // Tracking session Argent (pour affichage avec chrono et reset)
+    private static long moneySessionStart = System.currentTimeMillis();
+    
     // Solde total actuel
     private static double currentBalance = 0;
     
@@ -146,6 +149,8 @@ public class DataTracker {
         // Démarrer la session sell au premier événement si pas encore démarrée
         if (sellGains.size() == 1) {
             sellSessionStart = System.currentTimeMillis();
+            // Démarrer aussi la session Argent au premier gain de vente
+            moneySessionStart = System.currentTimeMillis();
         }
         lastUpdate = System.currentTimeMillis();
     }
@@ -171,6 +176,11 @@ public class DataTracker {
     public static long getSellSessionDuration() {
         if (sellGains.isEmpty()) return 0;
         return (System.currentTimeMillis() - sellSessionStart) / 1000;
+    }
+    
+    // Méthodes pour la session Argent (affichage global avec chrono)
+    public static long getMoneySessionDuration() {
+        return (System.currentTimeMillis() - moneySessionStart) / 1000;
     }
     
     // Méthodes pour le solde total
@@ -217,6 +227,8 @@ public class DataTracker {
         // Démarrer la session minion au premier événement si pas encore démarrée
         if (minionGains.size() == 1) {
             minionSessionStart = System.currentTimeMillis();
+            // Démarrer aussi la session Argent au premier gain de minion
+            moneySessionStart = System.currentTimeMillis();
         }
         lastUpdate = System.currentTimeMillis();
     }
@@ -260,6 +272,17 @@ public class DataTracker {
         sellGains.clear();
         sessionSellGain = 0;
         sellSessionStart = System.currentTimeMillis();
+        lastUpdate = System.currentTimeMillis();
+    }
+    
+    // Reset spécifique pour la catégorie Argent : remet à zéro les ventes et redémarre le chrono
+    public static void clearMoneySession() {
+        // Reset uniquement les gains de vente (sell), pas les minions ni le solde total
+        sellGains.clear();
+        sessionSellGain = 0;
+        sellSessionStart = System.currentTimeMillis();
+        // Redémarrer le chrono de la session Argent
+        moneySessionStart = System.currentTimeMillis();
         lastUpdate = System.currentTimeMillis();
     }
     

@@ -26,6 +26,8 @@ public class ConfigPopupScreen extends Screen {
     private boolean resetButtonHovered;
     private int islandResetButtonX, islandResetButtonY, islandResetButtonWidth, islandResetButtonHeight;
     private boolean islandResetButtonHovered;
+    private int moneyResetButtonX, moneyResetButtonY, moneyResetButtonWidth, moneyResetButtonHeight;
+    private boolean moneyResetButtonHovered;
     
     // Variables pour la colonne de droite (Filtres)
     private int filterGainButtonX, filterGainButtonY, filterGainButtonWidth, filterGainButtonHeight;
@@ -36,9 +38,14 @@ public class ConfigPopupScreen extends Screen {
     private final Runnable onClose;
     private int crossButtonX, crossButtonY, crossButtonSize;
     
+    // Variables pour le slider global
+    private int globalSliderX, globalSliderY, globalSliderWidth, globalSliderHeight;
+    private boolean globalSliderDragging = false;
+    private boolean globalSliderHovered = false;
+    
     // Configuration de l'interface - layout 2 colonnes
     private static final int POPUP_WIDTH = 380;
-    private static final int POPUP_HEIGHT = 220;
+    private static final int POPUP_HEIGHT = 280; // Réduit car un seul slider
     private static final int LINE_HEIGHT = 20;
     private static final int LINE_SPACING = 8;
     private static final int TOP_PADDING = 30;
@@ -74,11 +81,11 @@ public class ConfigPopupScreen extends Screen {
         moneyButtonX = leftColumnX + columnWidth - 60 - 25; // 25 pour le bouton R
         moneyButtonY = startY;
         
-        // Reset Argent (pas implémenté mais position)
-        // resetButtonWidth = 20;
-        // resetButtonHeight = 16;
-        // resetButtonX = leftColumnX + columnWidth - 20;
-        // resetButtonY = startY;
+        // Reset Argent 
+        moneyResetButtonWidth = 20;
+        moneyResetButtonHeight = 16;
+        moneyResetButtonX = leftColumnX + columnWidth - 20;
+        moneyResetButtonY = startY;
         
         // Minion (ligne 2 gauche)
         int line2Y = startY + LINE_HEIGHT + LINE_SPACING;
@@ -124,6 +131,13 @@ public class ConfigPopupScreen extends Screen {
         filterBalButtonHeight = 16;
         filterBalButtonX = rightColumnX + columnWidth - 60;
         filterBalButtonY = line3Y;
+        
+        // === SLIDER TAILLE GLOBALE ===
+        // Position du slider au-dessus des crédits
+        globalSliderWidth = 200;
+        globalSliderHeight = 8;
+        globalSliderX = popupX + (POPUP_WIDTH - globalSliderWidth) / 2; // Centré
+        globalSliderY = popupY + POPUP_HEIGHT - 80;
     }
 
     @Override
@@ -148,9 +162,11 @@ public class ConfigPopupScreen extends Screen {
         // === COLONNE DE GAUCHE ===
         // Argent (ligne 1 gauche)
         context.drawText(this.textRenderer, Text.literal("Argent"), leftColumnX, startY, 0xFFFFFFFF, false);
-        // context.drawText(this.textRenderer, Text.literal("R"), leftColumnX + 50, startY, 0xFFFF9900, false); // Pas de reset pour argent pour l'instant
         moneyButtonHovered = mouseX >= moneyButtonX && mouseX <= moneyButtonX + moneyButtonWidth && mouseY >= moneyButtonY && mouseY <= moneyButtonY + moneyButtonHeight;
         renderButton(context, moneyButtonX, moneyButtonY, moneyButtonWidth, moneyButtonHeight, moneyVisible, moneyButtonHovered, "Affiché", "Masqué");
+        // Bouton Reset Argent
+        moneyResetButtonHovered = mouseX >= moneyResetButtonX && mouseX <= moneyResetButtonX + moneyResetButtonWidth && mouseY >= moneyResetButtonY && mouseY <= moneyResetButtonY + moneyResetButtonHeight;
+        renderResetButton(context, moneyResetButtonX, moneyResetButtonY, moneyResetButtonWidth, moneyResetButtonHeight, moneyResetButtonHovered);
         
         // Minion (ligne 2 gauche)
         int line2Y = startY + LINE_HEIGHT + LINE_SPACING;
@@ -196,6 +212,21 @@ public class ConfigPopupScreen extends Screen {
         this.crossButtonX = crossX;
         this.crossButtonY = crossY;
         this.crossButtonSize = crossSize;
+        
+        // === SLIDER TAILLE HUD ===
+        // Titre du slider
+        String sliderTitle = "Taille HUD: " + Math.round(com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale * 100) + "%";
+        int sliderTitleWidth = this.textRenderer.getWidth(sliderTitle);
+        int sliderTitleX = popupX + (POPUP_WIDTH - sliderTitleWidth) / 2;
+        int sliderTitleY = globalSliderY - 15;
+        context.drawText(this.textRenderer, Text.literal(sliderTitle), sliderTitleX, sliderTitleY, 0xFFFFFF, false);
+        
+        // Vérifier si la souris survole le slider
+        globalSliderHovered = mouseX >= globalSliderX && mouseX <= globalSliderX + globalSliderWidth && 
+                            mouseY >= globalSliderY && mouseY <= globalSliderY + globalSliderHeight;
+        
+        // Rendu du slider
+        renderSlider(context, globalSliderX, globalSliderY, globalSliderWidth, globalSliderHeight, globalSliderHovered, com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale);
         
         // Texte "by : 实 NoirTrou 实" en bas du popup
         int byTextY = popupY + POPUP_HEIGHT - 15;
@@ -251,6 +282,27 @@ public class ConfigPopupScreen extends Screen {
         int crossTextY = y + (size - 8) / 2;
         context.drawText(this.textRenderer, crossText, crossTextX, crossTextY, 0xFFFFFFFF, false);
     }
+    
+    private void renderSlider(DrawContext context, int x, int y, int width, int height, boolean hovered, float scale) {
+        // Fond du slider (rail)
+        int railColor = hovered ? 0xFF666666 : 0xFF444444;
+        context.fill(x, y, x + width, y + height, railColor);
+        context.drawBorder(x, y, width, height, 0xFF888888);
+        
+        // Calculer la position du curseur basée sur la valeur (0.5f à 2.0f)
+        float normalizedValue = (scale - 0.5f) / (2.0f - 0.5f);
+        normalizedValue = Math.max(0.0f, Math.min(1.0f, normalizedValue)); // Clamper entre 0 et 1
+        
+        int knobWidth = 8;
+        int knobHeight = height + 4; // Un peu plus haut que le rail
+        int knobX = x + (int)((width - knobWidth) * normalizedValue);
+        int knobY = y - 2; // Légèrement au-dessus
+        
+        // Curseur (knob)
+        int knobColor = hovered ? 0xFF00FF00 : 0xFFCCCCCC;
+        context.fill(knobX, knobY, knobX + knobWidth, knobY + knobHeight, knobColor);
+        context.drawBorder(knobX, knobY, knobWidth, knobHeight, 0xFF888888);
+    }
 
     private void drawCenteredText(DrawContext context, Text text, int centerX, int y, int color) {
         int textWidth = this.textRenderer.getWidth(text);
@@ -287,6 +339,7 @@ public class ConfigPopupScreen extends Screen {
             if (mouseX >= moneyButtonX && mouseX <= moneyButtonX + moneyButtonWidth && mouseY >= moneyButtonY && mouseY <= moneyButtonY + moneyButtonHeight) {
                 moneyVisible = !moneyVisible;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.moneyVisible = moneyVisible;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
                 this.init();
                 return true;
             }
@@ -294,6 +347,7 @@ public class ConfigPopupScreen extends Screen {
             if (mouseX >= customButtonX && mouseX <= customButtonX + customButtonWidth && mouseY >= customButtonY && mouseY <= customButtonY + customButtonHeight) {
                 minionVisible = !minionVisible;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.minionVisible = minionVisible;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
                 this.init();
                 return true;
             }
@@ -301,6 +355,7 @@ public class ConfigPopupScreen extends Screen {
             if (mouseX >= islandButtonX && mouseX <= islandButtonX + islandButtonWidth && mouseY >= islandButtonY && mouseY <= islandButtonY + islandButtonHeight) {
                 islandLevelVisible = !islandLevelVisible;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.islandLevelVisible = islandLevelVisible;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
                 this.init();
                 return true;
             }
@@ -308,6 +363,7 @@ public class ConfigPopupScreen extends Screen {
             if (mouseX >= itemButtonX && mouseX <= itemButtonX + itemButtonWidth && mouseY >= itemButtonY && mouseY <= itemButtonY + itemButtonHeight) {
                 itemInHandVisible = !itemInHandVisible;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.itemInHandVisible = itemInHandVisible;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
                 this.init();
                 return true;
             }
@@ -315,6 +371,7 @@ public class ConfigPopupScreen extends Screen {
             if (mouseX >= filterGainButtonX && mouseX <= filterGainButtonX + filterGainButtonWidth && mouseY >= filterGainButtonY && mouseY <= filterGainButtonY + filterGainButtonHeight) {
                 filterMinionGainMessages = !filterMinionGainMessages;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.filterMinionGainMessages = filterMinionGainMessages;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
                 this.init();
                 return true;
             }
@@ -322,12 +379,19 @@ public class ConfigPopupScreen extends Screen {
             if (mouseX >= filterBalButtonX && mouseX <= filterBalButtonX + filterBalButtonWidth && mouseY >= filterBalButtonY && mouseY <= filterBalButtonY + filterBalButtonHeight) {
                 filterBalMessages = !filterBalMessages;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.filterBalMessages = filterBalMessages;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
                 this.init();
                 return true;
             }
             // Clic sur le bouton X pour fermer
             if (mouseX >= crossButtonX && mouseX <= crossButtonX + crossButtonSize && mouseY >= crossButtonY && mouseY <= crossButtonY + crossButtonSize) {
                 this.close();
+                return true;
+            }
+            // Clic sur le bouton R pour reset de l'Argent (uniquement les ventes)
+            if (mouseX >= moneyResetButtonX && mouseX <= moneyResetButtonX + moneyResetButtonWidth && mouseY >= moneyResetButtonY && mouseY <= moneyResetButtonY + moneyResetButtonHeight) {
+                com.noirtrou.obtracker.tracker.DataTracker.clearMoneySession();
+                this.init();
                 return true;
             }
             // Clic sur le bouton R pour reset des Minions
@@ -342,7 +406,50 @@ public class ConfigPopupScreen extends Screen {
                 this.init();
                 return true;
             }
+            
+            // Clic sur le slider global
+            if (mouseX >= globalSliderX && mouseX <= globalSliderX + globalSliderWidth && 
+                mouseY >= globalSliderY && mouseY <= globalSliderY + globalSliderHeight) {
+                globalSliderDragging = true;
+                updateGlobalSliderValue((int)mouseX);
+                return true;
+            }
         }
         return super.mouseClicked(mouseX, mouseY, button);
+    }
+    
+    @Override
+    public boolean mouseReleased(double mouseX, double mouseY, int button) {
+        if (button == 0) {
+            if (globalSliderDragging) {
+                globalSliderDragging = false;
+                return true;
+            }
+        }
+        return super.mouseReleased(mouseX, mouseY, button);
+    }
+    
+    @Override
+    public boolean mouseDragged(double mouseX, double mouseY, int button, double deltaX, double deltaY) {
+        if (button == 0) {
+            if (globalSliderDragging) {
+                updateGlobalSliderValue((int)mouseX);
+                return true;
+            }
+        }
+        return super.mouseDragged(mouseX, mouseY, button, deltaX, deltaY);
+    }
+    
+    // Méthode de mise à jour du slider HUD - maintenant contrôle tous les groupes uniformément
+    private void updateGlobalSliderValue(int mouseX) {
+        float relativeX = (float)(mouseX - globalSliderX) / globalSliderWidth;
+        relativeX = Math.max(0.0f, Math.min(1.0f, relativeX));
+        float globalScale = 0.5f + relativeX * 1.5f; // 0.5f à 2.0f
+        
+        // Mise à jour seulement du globalScale - tous les groupes HUD utilisent cette valeur
+        com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale = globalScale;
+        
+        // Sauvegarder la configuration automatiquement
+        com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
     }
 }

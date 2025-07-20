@@ -37,6 +37,7 @@ public class OverlayRenderer {
     private static String cachedTotalGain = "";
     private static String cachedMinionTotal = "";
     private static String cachedSellTotal = "";
+    private static String cachedMoneySessionTime = "";
     public static void register() {
         HudRenderCallback.EVENT.register((drawContext, tickCounter) -> render(drawContext));
     }
@@ -53,13 +54,31 @@ public class OverlayRenderer {
         int yellow = 0xFFFF00;
         int orange = 0xFFAA00;
 
-        int titleX = x;
-        int titleWidth = client.textRenderer.getWidth("ObTracker") + 8;
+        // Titre avec background - GROUPE UNIFIÉ
+        float titleScale = com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale;
+        drawContext.getMatrices().push();
+        drawContext.getMatrices().scale(titleScale, titleScale, 1.0f);
+        
+        int titleX = (int)(x / titleScale);
+        int titleY = (int)(y / titleScale);
+        
+        // Calculer les dimensions du groupe titre + background
+        int titleWidth = client.textRenderer.getWidth("ObTracker") + 8; // Texte + padding
         int titleHeight = 16;
+        int bgPadding = 4;
+        
+        // Dessiner le background du titre
         int bgColor = 0xCC222222;
-        drawContext.fill(titleX, y - 4, titleX + titleWidth, y - 4 + titleHeight, bgColor);
-        drawContext.drawText(client.textRenderer, Text.literal("§f§lObTracker"), x, y, 0xFFFFFF, true);
-        y += 20;
+        drawContext.fill(titleX, titleY - bgPadding, titleX + titleWidth, titleY - bgPadding + titleHeight, bgColor);
+        
+        // Dessiner le texte du titre
+        drawContext.drawText(client.textRenderer, Text.literal("§f§lObTracker"), titleX + 4, titleY, 0xFFFFFF, true); // +4 pour le padding
+        
+        drawContext.getMatrices().pop();
+        
+        // Calculer la hauteur totale du groupe titre scalé
+        int titleGroupHeight = titleHeight + bgPadding; // Background + padding
+        y += (int)(titleGroupHeight * titleScale) + (int)(4 * titleScale); // Espacement après titre aussi scalé
         
         // Mise à jour du cache Minion
         long minionSessionDuration = DataTracker.getMinionSessionDuration();
@@ -92,6 +111,7 @@ public class OverlayRenderer {
             cachedTotalGain = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalGain());
             cachedMinionTotal = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalMinionGains());
             cachedSellTotal = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalSellGains());
+            cachedMoneySessionTime = formatTime(DataTracker.getMoneySessionDuration());
             lastMoneyUpdate = currentTime;
         }
         
@@ -116,93 +136,118 @@ public class OverlayRenderer {
             }
         }
         
-        // SECTION ARGENT EN PREMIER (si activée)
+        // SECTION ARGENT EN PREMIER (si activée) - GROUPE UNIFIÉ
         if (com.noirtrou.obtracker.gui.ObTrackerConfig.moneyVisible) {
-            float moneyScale = 0.8f;
+            // Calculer la hauteur totale du groupe AVANT transformation
+            int groupHeight = 5 * 12 + 4; // 5 lignes * hauteur ligne + espacement interne
+            
+            float moneyScale = com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale; // Utiliser le globalScale du slider
             drawContext.getMatrices().push();
             drawContext.getMatrices().scale(moneyScale, moneyScale, 1.0f);
+            
             int moneyX = (int) (x / moneyScale);
             int moneyY = (int) (y / moneyScale);
             
-            // Titre de la section Argent
+            // Rendu de tout le groupe en une seule transformation
+            // Titre de la section Argent avec chrono en petit à côté (même taille que les éléments)
             drawContext.drawText(client.textRenderer, Text.literal("§e[Argent]"), moneyX, moneyY, yellow, true);
-            moneyY += (int) (12 / moneyScale);
+            int moneyTitleWidth = client.textRenderer.getWidth("[Argent]");
+            drawContext.drawText(client.textRenderer, Text.literal("§7(" + cachedMoneySessionTime + ")"), moneyX + moneyTitleWidth + 4, moneyY, 0xAAAAAA, true);
+            moneyY += 12;
             
-            int tabMoney = (int) (16 / moneyScale);
+            int tabMoney = 16;
             // Total du solde actuel
             drawContext.drawText(client.textRenderer, Text.literal("Total: " + cachedCurrentBalance + "§f实"), moneyX + tabMoney, moneyY, color, true);
-            moneyY += (int) (12 / moneyScale);
+            moneyY += 12;
             // Gain total (minion + sell) depuis le début de la session
             drawContext.drawText(client.textRenderer, Text.literal("Gain total: " + cachedTotalGain + "§f实"), moneyX + tabMoney, moneyY, yellow, true);
-            moneyY += (int) (12 / moneyScale);
+            moneyY += 12;
             // Gains des minions
             drawContext.drawText(client.textRenderer, Text.literal("Minion: " + cachedMinionTotal + "§f实"), moneyX + tabMoney, moneyY, color, true);
-            moneyY += (int) (12 / moneyScale);
+            moneyY += 12;
             // Gains des ventes
             drawContext.drawText(client.textRenderer, Text.literal("Sell: " + cachedSellTotal + "§f实"), moneyX + tabMoney, moneyY, color, true);
+            
             drawContext.getMatrices().pop();
-            y = (int) (moneyY * moneyScale) + 8;
-            y += 4; // espace après Argent
+            
+            // Mise à jour de Y avec la hauteur du groupe transformé + espacement
+            y += (int)(groupHeight * moneyScale) + (int)(4 * moneyScale); // Espacement après Argent aussi scalé
         }
         
-        // SECTION MINIONS EN DEUXIÈME (si activée)
+        // SECTION MINIONS EN DEUXIÈME (si activée) - GROUPE UNIFIÉ
         if (com.noirtrou.obtracker.gui.ObTrackerConfig.minionVisible) {
-            float minionScale = 0.8f;
+            // Calculer la hauteur totale du groupe AVANT transformation
+            int groupHeight = 9 * 12 + 4; // 9 lignes * hauteur ligne + espacement interne
+            
+            float minionScale = com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale; // Utiliser le globalScale du slider
             drawContext.getMatrices().push();
             drawContext.getMatrices().scale(minionScale, minionScale, 1.0f);
+            
             int minionX = (int) (x / minionScale);
             int minionY = (int) (y / minionScale);
             
+            // Rendu de tout le groupe en une seule transformation
             // Titre avec chrono en petit à côté (même taille que les éléments)
             drawContext.drawText(client.textRenderer, Text.literal("§6[Minions]"), minionX, minionY, orange, true);
             int minionTitleWidth = client.textRenderer.getWidth("[Minions]");
             drawContext.drawText(client.textRenderer, Text.literal("§7(" + cachedMinionSessionTime + ")"), minionX + minionTitleWidth + 4, minionY, 0xAAAAAA, true);
-            minionY += (int) (12 / minionScale);
+            minionY += 12;
             
-            int tab = (int) (16 / minionScale);
+            int tab = 16;
             // Mettre en premier les statistiques avec le caractère 实
             drawContext.drawText(client.textRenderer, Text.literal("Total: " + cachedTotalGains + "§f实"), minionX + tab, minionY, color, true);
-            minionY += (int) (12 / minionScale);
+            minionY += 12;
             drawContext.drawText(client.textRenderer, Text.literal("Moyenne: " + cachedAverageGain + "§f实"), minionX + tab, minionY, color, true);
-            minionY += (int) (12 / minionScale);
-            drawContext.drawText(client.textRenderer, Text.literal("Gains/h: " + cachedGainPerHour + "§f实/h"), minionX + tab, minionY, orange, true);
-            minionY += (int) (12 / minionScale);
-            drawContext.drawText(client.textRenderer, Text.literal("Gains/min: " + cachedGainPerMinute + "§f实/min"), minionX + tab, minionY, orange, true);
-            minionY += (int) (12 / minionScale);
+            minionY += 12;
+            drawContext.drawText(client.textRenderer, Text.literal("Gains/h: " + cachedGainPerHour + "§f实"), minionX + tab, minionY, orange, true);
+            minionY += 12;
+            drawContext.drawText(client.textRenderer, Text.literal("Gains/min: " + cachedGainPerMinute + "§f实"), minionX + tab, minionY, orange, true);
+            minionY += 12;
             // Ensuite les statistiques sans le caractère 实
             drawContext.drawText(client.textRenderer, Text.literal("Objets: " + cachedTotalObjects), minionX + tab, minionY, color, true);
-            minionY += (int) (12 / minionScale);
+            minionY += 12;
             drawContext.drawText(client.textRenderer, Text.literal("Moy/Objects: " + cachedAverageObjects), minionX + tab, minionY, color, true);
-            minionY += (int) (12 / minionScale);
+            minionY += 12;
             drawContext.drawText(client.textRenderer, Text.literal("Objets/h: " + cachedObjectsPerHour), minionX + tab, minionY, color, true);
-            minionY += (int) (12 / minionScale);
+            minionY += 12;
             drawContext.drawText(client.textRenderer, Text.literal("Objets/min: " + cachedObjectsPerMinute), minionX + tab, minionY, color, true);
+            
             drawContext.getMatrices().pop();
-            y = (int) (minionY * minionScale) + 8;
-            y += 4; // espace après Minions
+            
+            // Mise à jour de Y avec la hauteur du groupe transformé + espacement
+            y += (int)(groupHeight * minionScale) + (int)(4 * minionScale); // Espacement après Minions aussi scalé
         }
         
-        // SECTION NIVEAU D'ÎLE EN TROISIÈME (si activée)
+        // SECTION NIVEAU D'ÎLE EN TROISIÈME (si activée) - GROUPE UNIFIÉ
         if (com.noirtrou.obtracker.gui.ObTrackerConfig.islandLevelVisible) {
-            float islandScale = 0.8f;
+            // Calculer la hauteur totale du groupe AVANT transformation
+            int groupHeight = 4 * 12 + 4; // 4 lignes * hauteur ligne + espacement interne
+            
+            float islandScale = com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale; // Utiliser le globalScale du slider
             drawContext.getMatrices().push();
             drawContext.getMatrices().scale(islandScale, islandScale, 1.0f);
+            
             int islandX = (int) (x / islandScale);
             int islandY = (int) (y / islandScale);
             
+            // Rendu de tout le groupe en une seule transformation
             // Titre avec chrono en petit à côté (même taille que les éléments)
             drawContext.drawText(client.textRenderer, Text.literal("§b[Niveau d'île]"), islandX, islandY, 0x00FFFF, true);
             int islandTitleWidth = client.textRenderer.getWidth("[Niveau d'île]");
             drawContext.drawText(client.textRenderer, Text.literal("§7(" + cachedIslandSessionTime + ")"), islandX + islandTitleWidth + 4, islandY, 0xAAAAAA, true);
-            islandY += (int) (12 / islandScale);
+            islandY += 12;
             
-            int tabIsland = (int) (16 / islandScale);
+            int tabIsland = 16;
             drawContext.drawText(client.textRenderer, Text.literal("Total: " + cachedTotalIsland), islandX + tabIsland, islandY, color, true);
-            islandY += (int) (12 / islandScale);
+            islandY += 12;
             drawContext.drawText(client.textRenderer, Text.literal("Gains/h: " + cachedIslandPerHour), islandX + tabIsland, islandY, 0x00FFFF, true);
-            islandY += (int) (12 / islandScale);
+            islandY += 12;
             drawContext.drawText(client.textRenderer, Text.literal("Gains/min: " + cachedIslandPerMinute), islandX + tabIsland, islandY, color, true);
+            
             drawContext.getMatrices().pop();
+            
+            // Mise à jour de Y avec la hauteur du groupe transformé + espacement
+            y += (int)(groupHeight * islandScale) + (int)(4 * islandScale); // Espacement après Niveau d'île aussi scalé
         }
     }
 
