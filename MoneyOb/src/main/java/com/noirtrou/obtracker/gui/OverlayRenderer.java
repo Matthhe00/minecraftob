@@ -16,6 +16,8 @@ public class OverlayRenderer {
     // Cache des textes pour limiter les calculs à chaque frame
     private static long lastMinionUpdate = -1;
     private static long lastIslandUpdate = -1;
+    private static long lastMoneyUpdate = -1;
+    
     private static String cachedMinionSessionTime = "";
     private static String cachedIslandSessionTime = "";
     private static String cachedTotalGains = "";
@@ -30,6 +32,11 @@ public class OverlayRenderer {
     private static String cachedTotalIsland = "";
     private static String cachedIslandPerHour = "";
     private static String cachedIslandPerMinute = "";
+    // Cache pour Argent
+    private static String cachedCurrentBalance = "";
+    private static String cachedTotalGain = "";
+    private static String cachedMinionTotal = "";
+    private static String cachedSellTotal = "";
     public static void register() {
         HudRenderCallback.EVENT.register((drawContext, tickCounter) -> render(drawContext));
     }
@@ -38,10 +45,13 @@ public class OverlayRenderer {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null || client.getDebugHud().shouldShowDebugHud()) return;
 
+        long currentTime = System.currentTimeMillis();
+
         int x = 10;
         int y = 10;
         int color = 0xFFFFFF;
         int yellow = 0xFFFF00;
+        int orange = 0xFFAA00;
 
         int titleX = x;
         int titleWidth = client.textRenderer.getWidth("ObTracker") + 8;
@@ -76,12 +86,66 @@ public class OverlayRenderer {
             lastIslandUpdate = islandSessionDuration;
         }
         
-        // Affichage de l'item en main avec durabilité dans la zone HUD (si activé)
-        if (com.noirtrou.obtracker.gui.ObTrackerConfig.itemInHandVisible) {
-            renderItemInHand(drawContext, client, x, y);
-            renderArmorItems(drawContext, client);
+        // Mise à jour du cache Argent - réutiliser currentTime
+        if (currentTime - lastMoneyUpdate > 1000) { // Mise à jour chaque seconde
+            cachedCurrentBalance = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getCurrentBalance());
+            cachedTotalGain = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalGain());
+            cachedMinionTotal = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalMinionGains());
+            cachedSellTotal = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalSellGains());
+            lastMoneyUpdate = currentTime;
         }
         
+        // Exécution automatique de la commande /bal à intervalles réguliers (si activée)
+        if (com.noirtrou.obtracker.gui.ObTrackerConfig.autoBalCommand && 
+            DataTracker.shouldExecuteBalCommand() && client.player != null) {
+            if (client.getNetworkHandler() != null) {
+                client.player.networkHandler.sendChatCommand("bal");
+            }
+        }
+        
+        // Affichage de l'item en main avec durabilité dans la zone HUD (si activé)
+        // Optimisation : vérifier la visibilité avant le calcul coûteux
+        if (com.noirtrou.obtracker.gui.ObTrackerConfig.itemInHandVisible && 
+            client.player.getStackInHand(Hand.MAIN_HAND) != null && 
+            !client.player.getStackInHand(Hand.MAIN_HAND).isEmpty()) {
+            renderItemInHand(drawContext, client, x, y);
+            
+            // Optimisation : ne render les armures que si nécessaire
+            if (hasArmorWithDurability(client)) {
+                renderArmorItems(drawContext, client);
+            }
+        }
+        
+        // SECTION ARGENT EN PREMIER (si activée)
+        if (com.noirtrou.obtracker.gui.ObTrackerConfig.moneyVisible) {
+            float moneyScale = 0.8f;
+            drawContext.getMatrices().push();
+            drawContext.getMatrices().scale(moneyScale, moneyScale, 1.0f);
+            int moneyX = (int) (x / moneyScale);
+            int moneyY = (int) (y / moneyScale);
+            
+            // Titre de la section Argent
+            drawContext.drawText(client.textRenderer, Text.literal("§e[Argent]"), moneyX, moneyY, yellow, true);
+            moneyY += (int) (12 / moneyScale);
+            
+            int tabMoney = (int) (16 / moneyScale);
+            // Total du solde actuel
+            drawContext.drawText(client.textRenderer, Text.literal("Total: " + cachedCurrentBalance + "§f实"), moneyX + tabMoney, moneyY, color, true);
+            moneyY += (int) (12 / moneyScale);
+            // Gain total (minion + sell) depuis le début de la session
+            drawContext.drawText(client.textRenderer, Text.literal("Gain total: " + cachedTotalGain + "§f实"), moneyX + tabMoney, moneyY, yellow, true);
+            moneyY += (int) (12 / moneyScale);
+            // Gains des minions
+            drawContext.drawText(client.textRenderer, Text.literal("Minion: " + cachedMinionTotal + "§f实"), moneyX + tabMoney, moneyY, color, true);
+            moneyY += (int) (12 / moneyScale);
+            // Gains des ventes
+            drawContext.drawText(client.textRenderer, Text.literal("Sell: " + cachedSellTotal + "§f实"), moneyX + tabMoney, moneyY, color, true);
+            drawContext.getMatrices().pop();
+            y = (int) (moneyY * moneyScale) + 8;
+            y += 4; // espace après Argent
+        }
+        
+        // SECTION MINIONS EN DEUXIÈME (si activée)
         if (com.noirtrou.obtracker.gui.ObTrackerConfig.minionVisible) {
             float minionScale = 0.8f;
             drawContext.getMatrices().push();
@@ -90,20 +154,20 @@ public class OverlayRenderer {
             int minionY = (int) (y / minionScale);
             
             // Titre avec chrono en petit à côté (même taille que les éléments)
-            drawContext.drawText(client.textRenderer, Text.literal("§e[Minions]"), minionX, minionY, yellow, true);
+            drawContext.drawText(client.textRenderer, Text.literal("§6[Minions]"), minionX, minionY, orange, true);
             int minionTitleWidth = client.textRenderer.getWidth("[Minions]");
             drawContext.drawText(client.textRenderer, Text.literal("§7(" + cachedMinionSessionTime + ")"), minionX + minionTitleWidth + 4, minionY, 0xAAAAAA, true);
             minionY += (int) (12 / minionScale);
             
             int tab = (int) (16 / minionScale);
             // Mettre en premier les statistiques avec le caractère 实
-            drawContext.drawText(client.textRenderer, Text.literal("Total: " + cachedTotalGains + "实"), minionX + tab, minionY, color, true);
+            drawContext.drawText(client.textRenderer, Text.literal("Total: " + cachedTotalGains + "§f实"), minionX + tab, minionY, color, true);
             minionY += (int) (12 / minionScale);
-            drawContext.drawText(client.textRenderer, Text.literal("Moyenne: " + cachedAverageGain + "实"), minionX + tab, minionY, color, true);
+            drawContext.drawText(client.textRenderer, Text.literal("Moyenne: " + cachedAverageGain + "§f实"), minionX + tab, minionY, color, true);
             minionY += (int) (12 / minionScale);
-            drawContext.drawText(client.textRenderer, Text.literal("Gains/h: " + cachedGainPerHour + "实/h"), minionX + tab, minionY, yellow, true);
+            drawContext.drawText(client.textRenderer, Text.literal("Gains/h: " + cachedGainPerHour + "§f实/h"), minionX + tab, minionY, orange, true);
             minionY += (int) (12 / minionScale);
-            drawContext.drawText(client.textRenderer, Text.literal("Gains/min: " + cachedGainPerMinute + "实/min"), minionX + tab, minionY, yellow, true);
+            drawContext.drawText(client.textRenderer, Text.literal("Gains/min: " + cachedGainPerMinute + "§f实/min"), minionX + tab, minionY, orange, true);
             minionY += (int) (12 / minionScale);
             // Ensuite les statistiques sans le caractère 实
             drawContext.drawText(client.textRenderer, Text.literal("Objets: " + cachedTotalObjects), minionX + tab, minionY, color, true);
@@ -114,16 +178,11 @@ public class OverlayRenderer {
             minionY += (int) (12 / minionScale);
             drawContext.drawText(client.textRenderer, Text.literal("Objets/min: " + cachedObjectsPerMinute), minionX + tab, minionY, color, true);
             drawContext.getMatrices().pop();
-            // Niveau d'île après minion
             y = (int) (minionY * minionScale) + 8;
             y += 4; // espace après Minions
         }
-        // Si minion désactivé, Niveau d'île après session
-        if (!com.noirtrou.obtracker.gui.ObTrackerConfig.minionVisible) {
-            y += 4; // espace après Session si pas de minion
-        }
         
-        // Afficher Niveau d'île seulement si activé
+        // SECTION NIVEAU D'ÎLE EN TROISIÈME (si activée)
         if (com.noirtrou.obtracker.gui.ObTrackerConfig.islandLevelVisible) {
             float islandScale = 0.8f;
             drawContext.getMatrices().push();
@@ -144,8 +203,6 @@ public class OverlayRenderer {
             islandY += (int) (12 / islandScale);
             drawContext.drawText(client.textRenderer, Text.literal("Gains/min: " + cachedIslandPerMinute), islandX + tabIsland, islandY, color, true);
             drawContext.getMatrices().pop();
-            y = (int) (islandY * islandScale) + 8;
-            y += 4; // espace après Niveau d'île
         }
     }
 
@@ -498,5 +555,26 @@ public class OverlayRenderer {
         }
         
         return lastDurabilityCached;
+    }
+    
+    // Méthode optimisée pour vérifier s'il y a des armures avec durabilité
+    private static boolean hasArmorWithDurability(MinecraftClient client) {
+        if (client.player == null) return false;
+        
+        // Vérification rapide sans calcul de durabilité complet
+        ItemStack[] armorItems = {
+            client.player.getInventory().getArmorStack(3), // Casque
+            client.player.getInventory().getArmorStack(2), // Plastron
+            client.player.getInventory().getArmorStack(1), // Jambières
+            client.player.getInventory().getArmorStack(0)  // Bottes
+        };
+        
+        for (ItemStack armorItem : armorItems) {
+            if (!armorItem.isEmpty() && 
+                (armorItem.isDamageable() || armorItem.getName().getString().contains("durabilité"))) {
+                return true;
+            }
+        }
+        return false;
     }
 }

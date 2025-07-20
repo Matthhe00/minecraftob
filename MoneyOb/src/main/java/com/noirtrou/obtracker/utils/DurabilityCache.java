@@ -25,4 +25,11 @@ public class DurabilityCache {
         lastItemName = "";
         lastDurability = -1;
     }
+    
+    // Méthode pour vérifier si un item a changé et nettoyer si nécessaire
+    public static void checkAndClearIfItemChanged(String currentItemName) {
+        if (!currentItemName.equals(lastItemName)) {
+            clearCache();
+        }
+    }
 }

@@ -51,6 +51,22 @@ public class DataTracker {
     private static long lastUpdate = System.currentTimeMillis();
     private static double sessionGain = 0;
     private static int sessionObjects = 0;
+    
+    // Tracking des gains de vente (sell)
+    private static final List<Double> sellGains = new ArrayList<>();
+    private static double sessionSellGain = 0;
+    private static long sellSessionStart = System.currentTimeMillis();
+    
+    // Solde total actuel
+    private static double currentBalance = 0;
+    
+    // Protection contre les doublons
+    private static String lastProcessedMessage = "";
+    private static long lastMessageTime = 0;
+    
+    // Gestion automatique de la commande /bal
+    private static long lastBalCommand = 0;
+    private static final long BAL_COMMAND_INTERVAL = 30000; // 30 secondes entre chaque commande /bal
 
     public static double getLastBalance() { return lastBalance; }
     public static double getSessionGain() { return sessionGain; }
@@ -122,6 +138,79 @@ public class DataTracker {
         double minutes = getMinionSessionDuration() / 60.0;
         return minutes > 0 ? getTotalObjects() / minutes : 0;
     }
+    
+    // Méthodes pour les gains de vente (sell)
+    public static void addSellGain(double gain) {
+        sellGains.add(gain);
+        sessionSellGain += gain;
+        // Démarrer la session sell au premier événement si pas encore démarrée
+        if (sellGains.size() == 1) {
+            sellSessionStart = System.currentTimeMillis();
+        }
+        lastUpdate = System.currentTimeMillis();
+    }
+    
+    public static double getTotalSellGains() {
+        double sum = 0.0;
+        for (int i = 0; i < sellGains.size(); i++) {
+            sum += sellGains.get(i);
+        }
+        return sum;
+    }
+    
+    public static double getSellGainPerHour() {
+        double hours = getSellSessionDuration() / 3600.0;
+        return hours > 0 ? getTotalSellGains() / hours : 0;
+    }
+    
+    public static double getSellGainPerMinute() {
+        double minutes = getSellSessionDuration() / 60.0;
+        return minutes > 0 ? getTotalSellGains() / minutes : 0;
+    }
+    
+    public static long getSellSessionDuration() {
+        if (sellGains.isEmpty()) return 0;
+        return (System.currentTimeMillis() - sellSessionStart) / 1000;
+    }
+    
+    // Méthodes pour le solde total
+    public static void setCurrentBalance(double balance) {
+        currentBalance = balance;
+    }
+    
+    public static double getCurrentBalance() {
+        return currentBalance;
+    }
+    
+    // Méthode pour obtenir le gain total (minion + sell)
+    public static double getTotalGain() {
+        return getTotalMinionGains() + getTotalSellGains();
+    }
+    
+    // Protection contre les doublons
+    public static boolean isMessageAlreadyProcessed(String message) {
+        long currentTime = System.currentTimeMillis();
+        
+        // Si le même message a été traité dans les 500ms, on ignore
+        if (message.equals(lastProcessedMessage) && (currentTime - lastMessageTime) < 500) {
+            return true;
+        }
+        
+        // Marquer le message comme traité
+        lastProcessedMessage = message;
+        lastMessageTime = currentTime;
+        return false;
+    }
+    
+    // Gestion automatique de la commande /bal
+    public static boolean shouldExecuteBalCommand() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastBalCommand >= BAL_COMMAND_INTERVAL) {
+            lastBalCommand = currentTime;
+            return true;
+        }
+        return false;
+    }
     public static void addMinionGain(double gain) {
         minionGains.add(gain);
         sessionGain += gain;
@@ -145,6 +234,9 @@ public class DataTracker {
         sessionGain = 0;
         sessionObjects = 0;
         minionSessionStart = System.currentTimeMillis();
+        sellGains.clear();
+        sessionSellGain = 0;
+        sellSessionStart = System.currentTimeMillis();
         lastUpdate = System.currentTimeMillis();
     }
     
@@ -161,6 +253,13 @@ public class DataTracker {
         sessionGain = 0;
         sessionObjects = 0;
         minionSessionStart = System.currentTimeMillis();
+        lastUpdate = System.currentTimeMillis();
+    }
+    
+    public static void clearSellHistory() {
+        sellGains.clear();
+        sessionSellGain = 0;
+        sellSessionStart = System.currentTimeMillis();
         lastUpdate = System.currentTimeMillis();
     }
     

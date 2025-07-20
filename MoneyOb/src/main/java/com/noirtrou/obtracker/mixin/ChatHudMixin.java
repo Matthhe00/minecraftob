@@ -11,10 +11,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class ChatHudMixin {
     @Inject(method = "addMessage", at = @At("HEAD"), cancellable = true)
     private void onAddMessage(Text message, CallbackInfo ci) {
-        String msg = message.getString();
-        if (msg.startsWith("Vous avez gagné ")) {
-            // Annule l'affichage du message analysé
-            ci.cancel();
-        }
+        // Ce mixin est maintenant désactivé car le filtrage se fait dans ChatFilterMixin
+        // pour éviter le double traitement des messages
+        
+        // String msg = message.getString();
+        // if (msg.startsWith("Vous avez gagné ")) {
+        //     // Annule l'affichage du message analysé
+        //     ci.cancel();
+        // }
     }
 }
