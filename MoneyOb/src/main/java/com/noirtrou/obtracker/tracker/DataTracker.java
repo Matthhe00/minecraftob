@@ -2,6 +2,8 @@ package com.noirtrou.obtracker.tracker;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DataTracker {
     // Tracking Niveau d'île avec session propre
@@ -70,6 +72,57 @@ public class DataTracker {
     // Gestion automatique de la commande /bal
     private static long lastBalCommand = 0;
     private static final long BAL_COMMAND_INTERVAL = 30000; // 30 secondes entre chaque commande /bal
+
+    // === TRACKING MÉTIERS ===
+    // Structure pour les métiers : nom du métier -> JobData
+    public static class JobData {
+        public String name;
+        public int currentLevel;
+        public long currentXP;
+        public long maxXP; // XP nécessaire pour le niveau suivant
+        public long xpRemaining; // XP restante pour le niveau suivant (directement depuis l'action bar)
+        public double totalMoneyGain; // Gain d'argent total depuis le début de la session
+        public long totalXPGain; // Gain d'XP total depuis le début de la session
+        public long sessionStart; // Début de la session pour ce métier
+        
+        public JobData(String name, int level, long currentXP, long maxXP) {
+            this.name = name;
+            this.currentLevel = level;
+            this.currentXP = currentXP;
+            this.maxXP = maxXP;
+            this.xpRemaining = maxXP - currentXP;
+            this.totalMoneyGain = 0;
+            this.totalXPGain = 0;
+            this.sessionStart = System.currentTimeMillis();
+        }
+        
+        public long getXPRemaining() {
+            return xpRemaining;
+        }
+        
+        public double getMoneyPerHour() {
+            long sessionDuration = (System.currentTimeMillis() - sessionStart) / 1000;
+            if (sessionDuration <= 0) return 0;
+            double hours = sessionDuration / 3600.0;
+            return hours > 0 ? totalMoneyGain / hours : 0;
+        }
+        
+        public double getXPPerHour() {
+            long sessionDuration = (System.currentTimeMillis() - sessionStart) / 1000;
+            if (sessionDuration <= 0) return 0;
+            double hours = sessionDuration / 3600.0;
+            return hours > 0 ? totalXPGain / hours : 0;
+        }
+        
+        public void updateXpRemaining(long newXpRemaining) {
+            this.xpRemaining = newXpRemaining;
+        }
+    }
+    
+    private static final Map<String, JobData> jobs = new HashMap<>();
+    private static long jobSessionStart = System.currentTimeMillis();
+    private static long lastJobStatsCommand = 0;
+    private static final long JOB_STATS_COMMAND_INTERVAL = 60000; // 60 secondes entre chaque commande /job stats
 
     public static double getLastBalance() { return lastBalance; }
     public static double getSessionGain() { return sessionGain; }
@@ -220,6 +273,117 @@ public class DataTracker {
             return true;
         }
         return false;
+    }
+
+    // === MÉTHODES POUR LES MÉTIERS ===
+    
+    // Mettre à jour les informations d'un métier depuis /job stats
+    public static void updateJobStats(String jobName, int level, long currentXP, long maxXP) {
+        JobData job = jobs.get(jobName);
+        if (job == null) {
+            // Nouveau métier
+            job = new JobData(jobName, level, currentXP, maxXP);
+            jobs.put(jobName, job);
+        } else {
+            // Métier existant - mettre à jour les stats
+            job.currentLevel = level;
+            job.currentXP = currentXP;
+            job.maxXP = maxXP;
+        }
+    }
+    
+    // Ajouter des gains d'XP et/ou d'argent pour un métier (depuis action bar)
+    public static void addJobGain(String jobName, long xpGain, double moneyGain) {
+        JobData job = jobs.get(jobName);
+        if (job != null) {
+            job.totalXPGain += xpGain;
+            job.totalMoneyGain += moneyGain;
+            job.currentXP += xpGain;
+            
+            // Vérifier si on a gagné un niveau
+            while (job.currentXP >= job.maxXP && job.maxXP > 0) {
+                job.currentLevel++;
+                job.currentXP -= job.maxXP;
+                // Note: maxXP devrait être mis à jour avec /job stats pour le nouveau niveau
+            }
+        }
+    }
+    
+    // Nouvelle méthode pour ajouter des gains avec l'XP restante directement depuis l'action bar
+    public static void addJobGainWithXpRemaining(String jobName, long xpGain, double moneyGain, long xpRemaining) {
+        JobData job = jobs.get(jobName);
+        if (job == null) {
+            // Créer un nouveau métier si pas encore connu avec des valeurs par défaut
+            job = new JobData(jobName, 1, 0, 1000);
+            jobs.put(jobName, job);
+        }
+        
+        // Accumuler les gains totaux
+        job.totalXPGain += xpGain;
+        job.totalMoneyGain += moneyGain;
+        
+        // Mettre à jour l'XP restante directement depuis l'action bar
+        job.updateXpRemaining(xpRemaining);
+        
+        // Calculer le niveau actuel approximatif basé sur l'XP restante
+        // Si nous avons des données d'XP restante, nous pouvons déduire l'XP actuelle
+        if (xpRemaining > 0) {
+            // Nous ne connaissons pas le maxXP exact du niveau actuel,
+            // mais nous pouvons estimer en fonction des données disponibles
+            job.xpRemaining = xpRemaining;
+            
+            // Debug pour voir les valeurs mises à jour
+            System.out.println("[ObTracker] [JOB UPDATE] " + jobName + 
+                             " - XP Remaining updated to: " + xpRemaining +
+                             ", Total XP gained: " + job.totalXPGain +
+                             ", Total Money gained: " + job.totalMoneyGain);
+        }
+    }
+    
+    // Obtenir la liste des métiers
+    public static Map<String, JobData> getJobs() {
+        return new HashMap<>(jobs);
+    }
+    
+    // Obtenir la durée de la session métier
+    public static long getJobSessionDuration() {
+        if (jobs.isEmpty()) return 0;
+        return (System.currentTimeMillis() - jobSessionStart) / 1000;
+    }
+    
+    // Obtenir le total d'argent gagné par tous les métiers
+    public static double getTotalJobMoney() {
+        double total = 0.0;
+        for (JobData job : jobs.values()) {
+            total += job.totalMoneyGain;
+        }
+        return total;
+    }
+    
+    // Obtenir le total d'XP gagné par tous les métiers
+    public static long getTotalJobXP() {
+        long total = 0;
+        for (JobData job : jobs.values()) {
+            total += job.totalXPGain;
+        }
+        return total;
+    }
+    
+    // Vérifier s'il faut exécuter /job stats
+    public static boolean shouldExecuteJobStatsCommand() {
+        long currentTime = System.currentTimeMillis();
+        if (currentTime - lastJobStatsCommand >= JOB_STATS_COMMAND_INTERVAL) {
+            lastJobStatsCommand = currentTime;
+            return true;
+        }
+        return false;
+    }
+    
+    // Réinitialiser la session métiers
+    public static void clearJobSession() {
+        jobs.clear();
+        jobSessionStart = System.currentTimeMillis();
+        lastJobStatsCommand = 0;
     }
     public static void addMinionGain(double gain) {
         minionGains.add(gain);

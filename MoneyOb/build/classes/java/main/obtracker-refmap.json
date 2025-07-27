@@ -1,0 +1,74 @@
+{
+  "mappings": {
+    "com/noirtrou/obtracker/mixin/ActionBarMixin": {
+      "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V"
+    },
+    "com/noirtrou/obtracker/mixin/ChatFilterMixin": {
+      "onGameMessage": "Lnet/minecraft/class_634;method_43596(Lnet/minecraft/class_7439;)V"
+    },
+    "com/noirtrou/obtracker/mixin/ChatHudMixin": {
+      "addMessage": "Lnet/minecraft/class_338;method_1812(Lnet/minecraft/class_2561;)V"
+    },
+    "com/noirtrou/obtracker/mixin/InGameHudMixin": {
+      "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V",
+      "setSubtitle": "Lnet/minecraft/class_329;method_34002(Lnet/minecraft/class_2561;)V",
+      "setTitle": "Lnet/minecraft/class_329;method_34004(Lnet/minecraft/class_2561;)V"
+    },
+    "com/noirtrou/obtracker/mixin/ItemStackTooltipMixin": {
+      "getTooltip": "Lnet/minecraft/class_1799;method_7950(Lnet/minecraft/class_1792$class_9635;Lnet/minecraft/class_1657;Lnet/minecraft/class_1836;)Ljava/util/List;"
+    },
+    "com/noirtrou/obtracker/mixin/ItemTooltipMixin": {
+      "getTooltip": "Lnet/minecraft/class_1799;method_7950(Lnet/minecraft/class_1792$class_9635;Lnet/minecraft/class_1657;Lnet/minecraft/class_1836;)Ljava/util/List;"
+    },
+    "com/noirtrou/obtracker/mixin/TitleCaptureMixin": {
+      "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V",
+      "setSubtitle": "Lnet/minecraft/class_329;method_34002(Lnet/minecraft/class_2561;)V",
+      "setTitle": "Lnet/minecraft/class_329;method_34004(Lnet/minecraft/class_2561;)V"
+    },
+    "com/noirtrou/obtracker/mixin/TitlePacketHandlerMixin": {
+      "onOverlayMessage": "Lnet/minecraft/class_634;method_34076(Lnet/minecraft/class_5894;)V",
+      "onSubtitle": "Lnet/minecraft/class_634;method_34082(Lnet/minecraft/class_5903;)V",
+      "onTitle": "Lnet/minecraft/class_634;method_34083(Lnet/minecraft/class_5904;)V"
+    },
+    "com/noirtrou/obtracker/mixin/TitlePacketMixin": {
+      "onTitle": "Lnet/minecraft/class_634;method_34083(Lnet/minecraft/class_5904;)V"
+    }
+  },
+  "data": {
+    "named:intermediary": {
+      "com/noirtrou/obtracker/mixin/ActionBarMixin": {
+        "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V"
+      },
+      "com/noirtrou/obtracker/mixin/ChatFilterMixin": {
+        "onGameMessage": "Lnet/minecraft/class_634;method_43596(Lnet/minecraft/class_7439;)V"
+      },
+      "com/noirtrou/obtracker/mixin/ChatHudMixin": {
+        "addMessage": "Lnet/minecraft/class_338;method_1812(Lnet/minecraft/class_2561;)V"
+      },
+      "com/noirtrou/obtracker/mixin/InGameHudMixin": {
+        "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V",
+        "setSubtitle": "Lnet/minecraft/class_329;method_34002(Lnet/minecraft/class_2561;)V",
+        "setTitle": "Lnet/minecraft/class_329;method_34004(Lnet/minecraft/class_2561;)V"
+      },
+      "com/noirtrou/obtracker/mixin/ItemStackTooltipMixin": {
+        "getTooltip": "Lnet/minecraft/class_1799;method_7950(Lnet/minecraft/class_1792$class_9635;Lnet/minecraft/class_1657;Lnet/minecraft/class_1836;)Ljava/util/List;"
+      },
+      "com/noirtrou/obtracker/mixin/ItemTooltipMixin": {
+        "getTooltip": "Lnet/minecraft/class_1799;method_7950(Lnet/minecraft/class_1792$class_9635;Lnet/minecraft/class_1657;Lnet/minecraft/class_1836;)Ljava/util/List;"
+      },
+      "com/noirtrou/obtracker/mixin/TitleCaptureMixin": {
+        "setOverlayMessage": "Lnet/minecraft/class_329;method_1758(Lnet/minecraft/class_2561;Z)V",
+        "setSubtitle": "Lnet/minecraft/class_329;method_34002(Lnet/minecraft/class_2561;)V",
+        "setTitle": "Lnet/minecraft/class_329;method_34004(Lnet/minecraft/class_2561;)V"
+      },
+      "com/noirtrou/obtracker/mixin/TitlePacketHandlerMixin": {
+        "onOverlayMessage": "Lnet/minecraft/class_634;method_34076(Lnet/minecraft/class_5894;)V",
+        "onSubtitle": "Lnet/minecraft/class_634;method_34082(Lnet/minecraft/class_5903;)V",
+        "onTitle": "Lnet/minecraft/class_634;method_34083(Lnet/minecraft/class_5904;)V"
+      },
+      "com/noirtrou/obtracker/mixin/TitlePacketMixin": {
+        "onTitle": "Lnet/minecraft/class_634;method_34083(Lnet/minecraft/class_5904;)V"
+      }
+    }
+  }
+}

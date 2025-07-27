@@ -10,8 +10,10 @@ public class ConfigPopupScreen extends Screen {
     private boolean islandLevelVisible;
     private boolean itemInHandVisible;
     private boolean moneyVisible;
+    private boolean jobVisible;
     private boolean filterMinionGainMessages;
     private boolean filterBalMessages;
+    private boolean filterJobStatsMessages;
     
     // Variables pour la colonne de gauche (Affichage/Reset)
     private int moneyButtonX, moneyButtonY, moneyButtonWidth, moneyButtonHeight;
@@ -28,12 +30,19 @@ public class ConfigPopupScreen extends Screen {
     private boolean islandResetButtonHovered;
     private int moneyResetButtonX, moneyResetButtonY, moneyResetButtonWidth, moneyResetButtonHeight;
     private boolean moneyResetButtonHovered;
+    // Variables pour Métiers
+    private int jobButtonX, jobButtonY, jobButtonWidth, jobButtonHeight;
+    private boolean jobButtonHovered;
+    private int jobResetButtonX, jobResetButtonY, jobResetButtonWidth, jobResetButtonHeight;
+    private boolean jobResetButtonHovered;
     
     // Variables pour la colonne de droite (Filtres)
     private int filterGainButtonX, filterGainButtonY, filterGainButtonWidth, filterGainButtonHeight;
     private boolean filterGainButtonHovered;
     private int filterBalButtonX, filterBalButtonY, filterBalButtonWidth, filterBalButtonHeight;
     private boolean filterBalButtonHovered;
+    private int filterJobStatsButtonX, filterJobStatsButtonY, filterJobStatsButtonWidth, filterJobStatsButtonHeight;
+    private boolean filterJobStatsButtonHovered;
     
     private final Runnable onClose;
     private int crossButtonX, crossButtonY, crossButtonSize;
@@ -45,7 +54,7 @@ public class ConfigPopupScreen extends Screen {
     
     // Configuration de l'interface - layout 2 colonnes
     private static final int POPUP_WIDTH = 380;
-    private static final int POPUP_HEIGHT = 280; // Réduit car un seul slider
+    private static final int POPUP_HEIGHT = 300; // Augmenté pour inclure la nouvelle ligne métier
     private static final int LINE_HEIGHT = 20;
     private static final int LINE_SPACING = 8;
     private static final int TOP_PADDING = 30;
@@ -58,8 +67,10 @@ public class ConfigPopupScreen extends Screen {
         this.islandLevelVisible = com.noirtrou.obtracker.gui.ObTrackerConfig.islandLevelVisible;
         this.itemInHandVisible = com.noirtrou.obtracker.gui.ObTrackerConfig.itemInHandVisible;
         this.moneyVisible = com.noirtrou.obtracker.gui.ObTrackerConfig.moneyVisible;
+        this.jobVisible = com.noirtrou.obtracker.gui.ObTrackerConfig.jobVisible;
         this.filterMinionGainMessages = com.noirtrou.obtracker.gui.ObTrackerConfig.filterMinionGainMessages;
         this.filterBalMessages = com.noirtrou.obtracker.gui.ObTrackerConfig.filterBalMessages;
+        this.filterJobStatsMessages = com.noirtrou.obtracker.gui.ObTrackerConfig.filterJobStatsMessages;
         this.onClose = onClose;
     }
 
@@ -113,6 +124,19 @@ public class ConfigPopupScreen extends Screen {
         islandResetButtonX = leftColumnX + columnWidth - 20;
         islandResetButtonY = line3Y;
         
+        // Métiers (ligne 4 gauche)
+        int line4Y = line3Y + LINE_HEIGHT + LINE_SPACING;
+        jobButtonWidth = 60;
+        jobButtonHeight = 16;
+        jobButtonX = leftColumnX + columnWidth - 60 - 25;
+        jobButtonY = line4Y;
+        
+        // Reset Métiers
+        jobResetButtonWidth = 20;
+        jobResetButtonHeight = 16;
+        jobResetButtonX = leftColumnX + columnWidth - 20;
+        jobResetButtonY = line4Y;
+        
         // === COLONNE DE DROITE ===
         // Item (ligne 1 droite)
         itemButtonWidth = 60;
@@ -131,6 +155,12 @@ public class ConfigPopupScreen extends Screen {
         filterBalButtonHeight = 16;
         filterBalButtonX = rightColumnX + columnWidth - 60;
         filterBalButtonY = line3Y;
+        
+        // Filtre /job stats (ligne 4 droite)
+        filterJobStatsButtonWidth = 60;
+        filterJobStatsButtonHeight = 16;
+        filterJobStatsButtonX = rightColumnX + columnWidth - 60;
+        filterJobStatsButtonY = line4Y;
         
         // === SLIDER TAILLE GLOBALE ===
         // Position du slider au-dessus des crédits
@@ -186,6 +216,15 @@ public class ConfigPopupScreen extends Screen {
         islandResetButtonHovered = mouseX >= islandResetButtonX && mouseX <= islandResetButtonX + islandResetButtonWidth && mouseY >= islandResetButtonY && mouseY <= islandResetButtonY + islandResetButtonHeight;
         renderResetButton(context, islandResetButtonX, islandResetButtonY, islandResetButtonWidth, islandResetButtonHeight, islandResetButtonHovered);
         
+        // Métiers (ligne 4 gauche)
+        int line4Y = line3Y + LINE_HEIGHT + LINE_SPACING;
+        context.drawText(this.textRenderer, Text.literal("Métiers"), leftColumnX, line4Y, 0xFFFFFFFF, false);
+        jobButtonHovered = mouseX >= jobButtonX && mouseX <= jobButtonX + jobButtonWidth && mouseY >= jobButtonY && mouseY <= jobButtonY + jobButtonHeight;
+        renderButton(context, jobButtonX, jobButtonY, jobButtonWidth, jobButtonHeight, jobVisible, jobButtonHovered, "Affiché", "Masqué");
+        // Bouton Reset Métiers
+        jobResetButtonHovered = mouseX >= jobResetButtonX && mouseX <= jobResetButtonX + jobResetButtonWidth && mouseY >= jobResetButtonY && mouseY <= jobResetButtonY + jobResetButtonHeight;
+        renderResetButton(context, jobResetButtonX, jobResetButtonY, jobResetButtonWidth, jobResetButtonHeight, jobResetButtonHovered);
+        
         // === COLONNE DE DROITE ===
         // Item (ligne 1 droite)
         context.drawText(this.textRenderer, Text.literal("Item"), rightColumnX, startY, 0xFFFFFFFF, false);
@@ -203,6 +242,12 @@ public class ConfigPopupScreen extends Screen {
         filterBalButtonHovered = mouseX >= filterBalButtonX && mouseX <= filterBalButtonX + filterBalButtonWidth && mouseY >= filterBalButtonY && mouseY <= filterBalButtonY + filterBalButtonHeight;
         // Inverser la logique : si filtre activé = masqué, si filtre désactivé = affiché
         renderButton(context, filterBalButtonX, filterBalButtonY, filterBalButtonWidth, filterBalButtonHeight, !filterBalMessages, filterBalButtonHovered, "Affiché", "Masqué");
+        
+        // Job Stats (ligne 4 droite)
+        context.drawText(this.textRenderer, Text.literal("Job Stats"), rightColumnX, line4Y, 0xFFFFFFFF, false);
+        filterJobStatsButtonHovered = mouseX >= filterJobStatsButtonX && mouseX <= filterJobStatsButtonX + filterJobStatsButtonWidth && mouseY >= filterJobStatsButtonY && mouseY <= filterJobStatsButtonY + filterJobStatsButtonHeight;
+        // Inverser la logique : si filtre activé = masqué, si filtre désactivé = affiché
+        renderButton(context, filterJobStatsButtonX, filterJobStatsButtonY, filterJobStatsButtonWidth, filterJobStatsButtonHeight, !filterJobStatsMessages, filterJobStatsButtonHovered, "Affiché", "Masqué");
         
         // Bouton X pour fermer
         int crossSize = 18;
@@ -367,6 +412,14 @@ public class ConfigPopupScreen extends Screen {
                 this.init();
                 return true;
             }
+            // Clic sur le bouton Métiers
+            if (mouseX >= jobButtonX && mouseX <= jobButtonX + jobButtonWidth && mouseY >= jobButtonY && mouseY <= jobButtonY + jobButtonHeight) {
+                jobVisible = !jobVisible;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.jobVisible = jobVisible;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
+                this.init();
+                return true;
+            }
             // Clic sur le bouton Filtre gains
             if (mouseX >= filterGainButtonX && mouseX <= filterGainButtonX + filterGainButtonWidth && mouseY >= filterGainButtonY && mouseY <= filterGainButtonY + filterGainButtonHeight) {
                 filterMinionGainMessages = !filterMinionGainMessages;
@@ -379,6 +432,14 @@ public class ConfigPopupScreen extends Screen {
             if (mouseX >= filterBalButtonX && mouseX <= filterBalButtonX + filterBalButtonWidth && mouseY >= filterBalButtonY && mouseY <= filterBalButtonY + filterBalButtonHeight) {
                 filterBalMessages = !filterBalMessages;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.filterBalMessages = filterBalMessages;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
+                this.init();
+                return true;
+            }
+            // Clic sur le bouton Filtre /job stats
+            if (mouseX >= filterJobStatsButtonX && mouseX <= filterJobStatsButtonX + filterJobStatsButtonWidth && mouseY >= filterJobStatsButtonY && mouseY <= filterJobStatsButtonY + filterJobStatsButtonHeight) {
+                filterJobStatsMessages = !filterJobStatsMessages;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.filterJobStatsMessages = filterJobStatsMessages;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
                 this.init();
                 return true;
@@ -403,6 +464,12 @@ public class ConfigPopupScreen extends Screen {
             // Clic sur le bouton R pour reset du Niveau d'île
             if (mouseX >= islandResetButtonX && mouseX <= islandResetButtonX + islandResetButtonWidth && mouseY >= islandResetButtonY && mouseY <= islandResetButtonY + islandResetButtonHeight) {
                 com.noirtrou.obtracker.tracker.DataTracker.clearIslandHistory();
+                this.init();
+                return true;
+            }
+            // Clic sur le bouton R pour reset des Métiers
+            if (mouseX >= jobResetButtonX && mouseX <= jobResetButtonX + jobResetButtonWidth && mouseY >= jobResetButtonY && mouseY <= jobResetButtonY + jobResetButtonHeight) {
+                com.noirtrou.obtracker.tracker.DataTracker.clearJobSession();
                 this.init();
                 return true;
             }

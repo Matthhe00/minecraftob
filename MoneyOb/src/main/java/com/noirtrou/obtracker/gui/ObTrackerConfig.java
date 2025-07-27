@@ -11,8 +11,10 @@ public class ObTrackerConfig {
     public static boolean islandLevelVisible = true;
     public static boolean itemInHandVisible = true;
     public static boolean moneyVisible = true;
+    public static boolean jobVisible = true; // Nouvelle catégorie métier
     public static boolean filterMinionGainMessages = true;
     public static boolean filterBalMessages = true;
+    public static boolean filterJobStatsMessages = true; // Filtre pour /job stats
     public static boolean autoBalCommand = true; // Exécution automatique de /bal
     public static float hudScale = 1.0f; // Échelle globale de l'overlay HUD (0.5f à 2.0f)
     public static float globalScale = 1.0f; // Échelle globale contrôlant toutes les catégories
@@ -22,6 +24,7 @@ public class ObTrackerConfig {
     public static float minionScale = 1.0f; // Échelle de la section Minion
     public static float islandScale = 1.0f; // Échelle de la section Niveau d'île
     public static float itemScale = 1.0f; // Échelle de la section Item en main
+    public static float jobScale = 1.0f; // Échelle de la section Métier
     
     private static final String CONFIG_FILE_PATH = "config/obtracker-config.properties";
     
@@ -33,8 +36,10 @@ public class ObTrackerConfig {
             properties.setProperty("islandLevelVisible", String.valueOf(islandLevelVisible));
             properties.setProperty("itemInHandVisible", String.valueOf(itemInHandVisible));
             properties.setProperty("moneyVisible", String.valueOf(moneyVisible));
+            properties.setProperty("jobVisible", String.valueOf(jobVisible));
             properties.setProperty("filterMinionGainMessages", String.valueOf(filterMinionGainMessages));
             properties.setProperty("filterBalMessages", String.valueOf(filterBalMessages));
+            properties.setProperty("filterJobStatsMessages", String.valueOf(filterJobStatsMessages));
             properties.setProperty("autoBalCommand", String.valueOf(autoBalCommand));
             properties.setProperty("hudScale", String.valueOf(hudScale));
             properties.setProperty("globalScale", String.valueOf(globalScale));
@@ -42,6 +47,7 @@ public class ObTrackerConfig {
             properties.setProperty("minionScale", String.valueOf(minionScale));
             properties.setProperty("islandScale", String.valueOf(islandScale));
             properties.setProperty("itemScale", String.valueOf(itemScale));
+            properties.setProperty("jobScale", String.valueOf(jobScale));
             
             // Créer le dossier config s'il n'existe pas
             Path configPath = Paths.get(CONFIG_FILE_PATH);
@@ -76,8 +82,10 @@ public class ObTrackerConfig {
             islandLevelVisible = Boolean.parseBoolean(properties.getProperty("islandLevelVisible", "true"));
             itemInHandVisible = Boolean.parseBoolean(properties.getProperty("itemInHandVisible", "true"));
             moneyVisible = Boolean.parseBoolean(properties.getProperty("moneyVisible", "true"));
+            jobVisible = Boolean.parseBoolean(properties.getProperty("jobVisible", "true"));
             filterMinionGainMessages = Boolean.parseBoolean(properties.getProperty("filterMinionGainMessages", "true"));
             filterBalMessages = Boolean.parseBoolean(properties.getProperty("filterBalMessages", "true"));
+            filterJobStatsMessages = Boolean.parseBoolean(properties.getProperty("filterJobStatsMessages", "true"));
             autoBalCommand = Boolean.parseBoolean(properties.getProperty("autoBalCommand", "true"));
             
             try {
@@ -87,6 +95,7 @@ public class ObTrackerConfig {
                 minionScale = Float.parseFloat(properties.getProperty("minionScale", "1.0"));
                 islandScale = Float.parseFloat(properties.getProperty("islandScale", "1.0"));
                 itemScale = Float.parseFloat(properties.getProperty("itemScale", "1.0"));
+                jobScale = Float.parseFloat(properties.getProperty("jobScale", "1.0"));
                 
                 // Vérifier que les valeurs sont dans la plage correcte (0.5f à 2.0f)
                 globalScale = Math.max(0.5f, Math.min(2.0f, globalScale));
@@ -95,6 +104,7 @@ public class ObTrackerConfig {
                 minionScale = Math.max(0.5f, Math.min(2.0f, minionScale));
                 islandScale = Math.max(0.5f, Math.min(2.0f, islandScale));
                 itemScale = Math.max(0.5f, Math.min(2.0f, itemScale));
+                jobScale = Math.max(0.5f, Math.min(2.0f, jobScale));
             } catch (NumberFormatException e) {
                 System.err.println("Erreur lors du parsing des valeurs de scale, utilisation des valeurs par défaut");
             }

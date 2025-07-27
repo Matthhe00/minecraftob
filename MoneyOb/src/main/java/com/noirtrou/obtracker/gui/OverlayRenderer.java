@@ -38,6 +38,11 @@ public class OverlayRenderer {
     private static String cachedMinionTotal = "";
     private static String cachedSellTotal = "";
     private static String cachedMoneySessionTime = "";
+    // Cache pour Métiers
+    private static long lastJobUpdate = -1;
+    private static String cachedJobSessionTime = "";
+    private static String cachedTotalJobMoney = "";
+    private static final java.util.Map<String, String> cachedJobDisplays = new java.util.HashMap<>();
     public static void register() {
         HudRenderCallback.EVENT.register((drawContext, tickCounter) -> render(drawContext));
     }
@@ -53,6 +58,7 @@ public class OverlayRenderer {
         int color = 0xFFFFFF;
         int yellow = 0xFFFF00;
         int orange = 0xFFAA00;
+        int green = 0x55FF55;
 
         // Titre avec background - GROUPE UNIFIÉ
         float titleScale = com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale;
@@ -115,11 +121,42 @@ public class OverlayRenderer {
             lastMoneyUpdate = currentTime;
         }
         
+        // Mise à jour du cache Métiers
+        long jobSessionDuration = DataTracker.getJobSessionDuration();
+        if (jobSessionDuration != lastJobUpdate) {
+            cachedJobSessionTime = formatTime(jobSessionDuration);
+            cachedTotalJobMoney = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalJobMoney());
+            cachedJobDisplays.clear();
+            
+            // Préparer les affichages de chaque métier
+            for (java.util.Map.Entry<String, DataTracker.JobData> entry : DataTracker.getJobs().entrySet()) {
+                DataTracker.JobData job = entry.getValue();
+                
+                String display = String.format("%s: %d - %s - %s实/%s夺/h",
+                    job.name,
+                    job.currentLevel,
+                    com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(job.getXPRemaining()),
+                    com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(job.getMoneyPerHour()),
+                    com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(job.getXPPerHour())
+                );
+                cachedJobDisplays.put(job.name, display);
+            }
+            lastJobUpdate = jobSessionDuration;
+        }
+        
         // Exécution automatique de la commande /bal à intervalles réguliers (si activée)
         if (com.noirtrou.obtracker.gui.ObTrackerConfig.autoBalCommand && 
             DataTracker.shouldExecuteBalCommand() && client.player != null) {
             if (client.getNetworkHandler() != null) {
                 client.player.networkHandler.sendChatCommand("bal");
+            }
+        }
+        
+        // Exécution automatique de la commande /job stats à intervalles réguliers (si la catégorie métier est visible)
+        if (com.noirtrou.obtracker.gui.ObTrackerConfig.jobVisible && 
+            DataTracker.shouldExecuteJobStatsCommand() && client.player != null) {
+            if (client.getNetworkHandler() != null) {
+                client.player.networkHandler.sendChatCommand("job stats");
             }
         }
         
@@ -248,6 +285,50 @@ public class OverlayRenderer {
             
             // Mise à jour de Y avec la hauteur du groupe transformé + espacement
             y += (int)(groupHeight * islandScale) + (int)(4 * islandScale); // Espacement après Niveau d'île aussi scalé
+        }
+        
+        // SECTION MÉTIERS EN QUATRIÈME (si activée) - GROUPE UNIFIÉ
+        if (com.noirtrou.obtracker.gui.ObTrackerConfig.jobVisible) {
+            // Calculer la hauteur totale du groupe AVANT transformation
+            // +1 pour le titre, +1 pour le total d'argent, minimum 1 ligne de contenu pour les métiers
+            int jobLineCount = Math.max(cachedJobDisplays.size(), 1) + 2;
+            int groupHeight = jobLineCount * 12 + 4; // nombre de lignes * hauteur ligne + espacement interne
+            
+            float jobScale = com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale; // Utiliser le globalScale du slider
+            drawContext.getMatrices().push();
+            drawContext.getMatrices().scale(jobScale, jobScale, 1.0f);
+            
+            int jobX = (int) (x / jobScale);
+            int jobY = (int) (y / jobScale);
+            
+            // Rendu de tout le groupe en une seule transformation
+            // Titre avec chrono en petit à côté (même taille que les éléments)
+            drawContext.drawText(client.textRenderer, Text.literal("§a[Métiers]"), jobX, jobY, 0x55FF55, true);
+            int jobTitleWidth = client.textRenderer.getWidth("[Métiers]");
+            drawContext.drawText(client.textRenderer, Text.literal("§7(" + cachedJobSessionTime + ")"), jobX + jobTitleWidth + 4, jobY, 0xAAAAAA, true);
+            jobY += 12;
+            
+            int tabJob = 16;
+            // Afficher le total d'argent gagné par tous les métiers
+            drawContext.drawText(client.textRenderer, Text.literal("Total: " + cachedTotalJobMoney + "§f实"), jobX + tabJob, jobY, green, true);
+            jobY += 12;
+            
+            // Afficher chaque métier avec ses statistiques
+            if (!cachedJobDisplays.isEmpty()) {
+                for (String jobDisplay : cachedJobDisplays.values()) {
+                    drawContext.drawText(client.textRenderer, Text.literal(jobDisplay), jobX + tabJob, jobY, color, true);
+                    jobY += 12;
+                }
+            } else {
+                // Afficher un message informatif si aucun métier n'est détecté
+                drawContext.drawText(client.textRenderer, Text.literal("Aucun métier détecté. Utilisez /job stats"), jobX + tabJob, jobY, 0xAAAAAA, true);
+                jobY += 12;
+            }
+            
+            drawContext.getMatrices().pop();
+            
+            // Mise à jour de Y avec la hauteur du groupe transformé + espacement
+            y += (int)(groupHeight * jobScale) + (int)(4 * jobScale); // Espacement après Métiers aussi scalé
         }
     }
 

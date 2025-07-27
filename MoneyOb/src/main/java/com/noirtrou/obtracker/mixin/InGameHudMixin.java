@@ -1,6 +1,7 @@
 package com.noirtrou.obtracker.mixin;
 
 import com.noirtrou.obtracker.listeners.TitleListener;
+import com.noirtrou.obtracker.listeners.ActionBarListener;
 import net.minecraft.client.gui.hud.InGameHud;
 import net.minecraft.text.Text;
 import org.spongepowered.asm.mixin.Mixin;
@@ -39,6 +40,8 @@ public class InGameHudMixin {
         try {
             TitleListener.logDetection("setOverlayMessage", message);
             TitleListener.onActionBarReceived(message);
+            // Appeler aussi notre ActionBarListener pour le tracking des métiers
+            ActionBarListener.onActionBarUpdate(message);
         } catch (Exception e) {
             System.err.println("[ObTracker] Erreur dans onSetOverlayMessage: " + e.getMessage());
         }
