@@ -8,6 +8,7 @@ import java.util.Properties;
 
 public class ObTrackerConfig {
     public static boolean minionVisible = true;
+    public static boolean globalVisible = true;
     public static boolean islandLevelVisible = true;
     public static boolean itemInHandVisible = true;
     public static boolean moneyVisible = true;
@@ -30,6 +31,7 @@ public class ObTrackerConfig {
         try {
             Properties properties = new Properties();
             properties.setProperty("minionVisible", String.valueOf(minionVisible));
+            properties.setProperty("globalVisible", String.valueOf(globalVisible));
             properties.setProperty("islandLevelVisible", String.valueOf(islandLevelVisible));
             properties.setProperty("itemInHandVisible", String.valueOf(itemInHandVisible));
             properties.setProperty("moneyVisible", String.valueOf(moneyVisible));
@@ -73,6 +75,7 @@ public class ObTrackerConfig {
             
             // Charger les valeurs (avec valeurs par défaut en cas d'erreur)
             minionVisible = Boolean.parseBoolean(properties.getProperty("minionVisible", "true"));
+            globalVisible = Boolean.parseBoolean(properties.getProperty("globalVisible", "true"));
             islandLevelVisible = Boolean.parseBoolean(properties.getProperty("islandLevelVisible", "true"));
             itemInHandVisible = Boolean.parseBoolean(properties.getProperty("itemInHandVisible", "true"));
             moneyVisible = Boolean.parseBoolean(properties.getProperty("moneyVisible", "true"));

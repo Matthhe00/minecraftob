@@ -7,6 +7,7 @@ import org.lwjgl.glfw.GLFW;
 
 public class ConfigPopupScreen extends Screen {
     private boolean minionVisible;
+    private boolean globalVisible;
     private boolean islandLevelVisible;
     private boolean itemInHandVisible;
     private boolean moneyVisible;
@@ -28,6 +29,9 @@ public class ConfigPopupScreen extends Screen {
     private boolean islandResetButtonHovered;
     private int moneyResetButtonX, moneyResetButtonY, moneyResetButtonWidth, moneyResetButtonHeight;
     private boolean moneyResetButtonHovered;
+    // Global (nouvelle catégorie)
+    private int globalButtonX, globalButtonY, globalButtonWidth, globalButtonHeight;
+    private boolean globalButtonHovered;
     
     // Variables pour la colonne de droite (Filtres)
     private int filterGainButtonX, filterGainButtonY, filterGainButtonWidth, filterGainButtonHeight;
@@ -45,16 +49,19 @@ public class ConfigPopupScreen extends Screen {
     
     // Configuration de l'interface - layout 2 colonnes
     private static final int POPUP_WIDTH = 380;
-    private static final int POPUP_HEIGHT = 280; // Réduit car un seul slider
+    private static final int POPUP_HEIGHT = 220; // Hauteur réduite pour popup plus compacte
     private static final int LINE_HEIGHT = 20;
     private static final int LINE_SPACING = 8;
     private static final int TOP_PADDING = 30;
     private static final int SIDE_PADDING = 20;
     private static final int TITLE_HEIGHT = 25;
+    // Espace restant entre le bas du popup et la barre (plus bas = valeur plus petite)
+    private static final int SLIDER_BOTTOM_PADDING = 40;
 
     public ConfigPopupScreen(boolean minionVisible, Runnable onClose) {
         super(Text.literal("ObTracker"));
         this.minionVisible = minionVisible;
+    this.globalVisible = com.noirtrou.obtracker.gui.ObTrackerConfig.globalVisible;
         this.islandLevelVisible = com.noirtrou.obtracker.gui.ObTrackerConfig.islandLevelVisible;
         this.itemInHandVisible = com.noirtrou.obtracker.gui.ObTrackerConfig.itemInHandVisible;
         this.moneyVisible = com.noirtrou.obtracker.gui.ObTrackerConfig.moneyVisible;
@@ -73,6 +80,8 @@ public class ConfigPopupScreen extends Screen {
         int leftColumnX = popupX + SIDE_PADDING;
         int rightColumnX = popupX + SIDE_PADDING + columnWidth + SIDE_PADDING;
         int startY = popupY + TOP_PADDING + TITLE_HEIGHT;
+    // Ligne 0 (Global) au-dessus du startY
+    int line0Y = startY - LINE_HEIGHT - LINE_SPACING;
         
         // === COLONNE DE GAUCHE ===
         // Argent (ligne 1 gauche)
@@ -80,6 +89,12 @@ public class ConfigPopupScreen extends Screen {
         moneyButtonHeight = 16;
         moneyButtonX = leftColumnX + columnWidth - 60 - 25; // 25 pour le bouton R
         moneyButtonY = startY;
+
+    // Global (ligne 0 gauche)
+    globalButtonWidth = 60;
+    globalButtonHeight = 16;
+    globalButtonX = leftColumnX + columnWidth - 60 - 25;
+    globalButtonY = line0Y;
         
         // Reset Argent 
         moneyResetButtonWidth = 20;
@@ -134,10 +149,11 @@ public class ConfigPopupScreen extends Screen {
         
         // === SLIDER TAILLE GLOBALE ===
         // Position du slider au-dessus des crédits
-        globalSliderWidth = 200;
-        globalSliderHeight = 8;
-        globalSliderX = popupX + (POPUP_WIDTH - globalSliderWidth) / 2; // Centré
-        globalSliderY = popupY + POPUP_HEIGHT - 80;
+    globalSliderWidth = 200;
+    globalSliderHeight = 8;
+    globalSliderX = popupX + (POPUP_WIDTH - globalSliderWidth) / 2; // Centré
+    // Placer la barre plus bas et laisser une ligne d'espace entre les options et la barre
+    globalSliderY = popupY + POPUP_HEIGHT - SLIDER_BOTTOM_PADDING - globalSliderHeight;
     }
 
     @Override
@@ -168,9 +184,9 @@ public class ConfigPopupScreen extends Screen {
         moneyResetButtonHovered = mouseX >= moneyResetButtonX && mouseX <= moneyResetButtonX + moneyResetButtonWidth && mouseY >= moneyResetButtonY && mouseY <= moneyResetButtonY + moneyResetButtonHeight;
         renderResetButton(context, moneyResetButtonX, moneyResetButtonY, moneyResetButtonWidth, moneyResetButtonHeight, moneyResetButtonHovered);
         
-        // Minion (ligne 2 gauche)
-        int line2Y = startY + LINE_HEIGHT + LINE_SPACING;
-        context.drawText(this.textRenderer, Text.literal("Minion"), leftColumnX, line2Y, 0xFFFFFFFF, false);
+    // Sell Chest (ligne 2 gauche)
+    int line2Y = startY + LINE_HEIGHT + LINE_SPACING;
+    context.drawText(this.textRenderer, Text.literal("Sell Chest"), leftColumnX, line2Y, 0xFFFFFFFF, false);
         customButtonHovered = mouseX >= customButtonX && mouseX <= customButtonX + customButtonWidth && mouseY >= customButtonY && mouseY <= customButtonY + customButtonHeight;
         renderButton(context, customButtonX, customButtonY, customButtonWidth, customButtonHeight, minionVisible, customButtonHovered, "Affiché", "Masqué");
         // Bouton Reset Minion
@@ -179,6 +195,11 @@ public class ConfigPopupScreen extends Screen {
         
         // Niveau d'île (ligne 3 gauche)
         int line3Y = line2Y + LINE_HEIGHT + LINE_SPACING;
+    // Global (au-dessus de tout, inséré en ligne 0 gauche)
+    int line0Y = startY - LINE_HEIGHT - LINE_SPACING;
+    context.drawText(this.textRenderer, Text.literal("Global"), leftColumnX, line0Y, 0xFFFFFFFF, false);
+    globalButtonHovered = mouseX >= globalButtonX && mouseX <= globalButtonX + globalButtonWidth && mouseY >= globalButtonY && mouseY <= globalButtonY + globalButtonHeight;
+    renderButton(context, globalButtonX, globalButtonY, globalButtonWidth, globalButtonHeight, globalVisible, globalButtonHovered, "Affiché", "Masqué");
         context.drawText(this.textRenderer, Text.literal("Niveau d'île"), leftColumnX, line3Y, 0xFFFFFFFF, false);
         islandButtonHovered = mouseX >= islandButtonX && mouseX <= islandButtonX + islandButtonWidth && mouseY >= islandButtonY && mouseY <= islandButtonY + islandButtonHeight;
         renderButton(context, islandButtonX, islandButtonY, islandButtonWidth, islandButtonHeight, islandLevelVisible, islandButtonHovered, "Affiché", "Masqué");
@@ -215,10 +236,11 @@ public class ConfigPopupScreen extends Screen {
         
         // === SLIDER TAILLE HUD ===
         // Titre du slider
-        String sliderTitle = "Taille HUD: " + Math.round(com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale * 100) + "%";
-        int sliderTitleWidth = this.textRenderer.getWidth(sliderTitle);
-        int sliderTitleX = popupX + (POPUP_WIDTH - sliderTitleWidth) / 2;
-        int sliderTitleY = globalSliderY - 15;
+    String sliderTitle = "Taille HUD: " + Math.round(com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale * 100) + "%";
+    int sliderTitleWidth = this.textRenderer.getWidth(sliderTitle);
+    int sliderTitleX = popupX + (POPUP_WIDTH - sliderTitleWidth) / 2;
+    // Laisser une ligne d'espace entre les dernières options et le titre du slider
+    int sliderTitleY = globalSliderY - (LINE_HEIGHT + LINE_SPACING);
         context.drawText(this.textRenderer, Text.literal(sliderTitle), sliderTitleX, sliderTitleY, 0xFFFFFF, false);
         
         // Vérifier si la souris survole le slider
@@ -343,7 +365,7 @@ public class ConfigPopupScreen extends Screen {
                 this.init();
                 return true;
             }
-            // Clic sur le bouton Minion
+                // Clic sur le bouton Sell Chest
             if (mouseX >= customButtonX && mouseX <= customButtonX + customButtonWidth && mouseY >= customButtonY && mouseY <= customButtonY + customButtonHeight) {
                 minionVisible = !minionVisible;
                 com.noirtrou.obtracker.gui.ObTrackerConfig.minionVisible = minionVisible;
@@ -412,6 +434,14 @@ public class ConfigPopupScreen extends Screen {
                 mouseY >= globalSliderY && mouseY <= globalSliderY + globalSliderHeight) {
                 globalSliderDragging = true;
                 updateGlobalSliderValue((int)mouseX);
+                return true;
+            }
+            // Clic sur le bouton Global
+            if (mouseX >= globalButtonX && mouseX <= globalButtonX + globalButtonWidth && mouseY >= globalButtonY && mouseY <= globalButtonY + globalButtonHeight) {
+                globalVisible = !globalVisible;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.globalVisible = globalVisible;
+                com.noirtrou.obtracker.gui.ObTrackerConfig.saveConfig();
+                this.init();
                 return true;
             }
         }

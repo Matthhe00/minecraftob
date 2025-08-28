@@ -38,6 +38,10 @@ public class OverlayRenderer {
     private static String cachedMinionTotal = "";
     private static String cachedSellTotal = "";
     private static String cachedMoneySessionTime = "";
+    // Cache pour Global (totaux journaliers)
+    private static String cachedDailyMinion = "";
+    // Espacement additionnel appliqué uniquement après la catégorie Global
+    private static final int EXTRA_GLOBAL_SPACING = 12;
     public static void register() {
         HudRenderCallback.EVENT.register((drawContext, tickCounter) -> render(drawContext));
     }
@@ -112,6 +116,9 @@ public class OverlayRenderer {
             cachedMinionTotal = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalMinionGains());
             cachedSellTotal = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getTotalSellGains());
             cachedMoneySessionTime = formatTime(DataTracker.getMoneySessionDuration());
+            // Global daily totals
+            cachedDailyMinion = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getDailyTotalMinionGains());
+            // (combined option removed)
             lastMoneyUpdate = currentTime;
         }
         
@@ -137,6 +144,28 @@ public class OverlayRenderer {
         }
         
         // SECTION ARGENT EN PREMIER (si activée) - GROUPE UNIFIÉ
+        // SECTION GLOBAL (totaux journaliers) si activée
+        if (com.noirtrou.obtracker.gui.ObTrackerConfig.globalVisible) {
+            int groupHeightGlobal = 2 * 12 + 4; // 2 lignes
+            float globalScale = com.noirtrou.obtracker.gui.ObTrackerConfig.globalScale;
+            drawContext.getMatrices().push();
+            drawContext.getMatrices().scale(globalScale, globalScale, 1.0f);
+            int gX = (int)(x / globalScale);
+            int gY = (int)(y / globalScale);
+                drawContext.drawText(client.textRenderer, Text.literal("\u00a7d[Global]"), gX, gY, 0xFF55FF, true);
+                int tabG = 16;
+                gY += 12;
+                // Daily SC -> correspond aux gains des sell chests (minions)
+                drawContext.drawText(client.textRenderer, Text.literal("SC: " + cachedDailyMinion + "\u00a7f\u5b9e"), gX + tabG, gY, 0xFFFFFF, true);
+                gY += 12;
+                // Daily Lvl -> total des niveaux d'île gagnés
+                String cachedDailyIsland = com.noirtrou.obtracker.utils.MathUtils.formatNumberShort(DataTracker.getDailyTotalIslandLevels());
+                drawContext.drawText(client.textRenderer, Text.literal("Lvl: " + cachedDailyIsland), gX + tabG, gY, 0xFFFFFF, true);
+                gY += 12;
+            drawContext.getMatrices().pop();
+            y += (int)(groupHeightGlobal * globalScale) + (int)(4 * globalScale) + (int)(EXTRA_GLOBAL_SPACING * globalScale);
+        }
+
         if (com.noirtrou.obtracker.gui.ObTrackerConfig.moneyVisible) {
             // Calculer la hauteur totale du groupe AVANT transformation
             int groupHeight = 5 * 12 + 4; // 5 lignes * hauteur ligne + espacement interne
@@ -162,8 +191,8 @@ public class OverlayRenderer {
             // Gain total (minion + sell) depuis le début de la session
             drawContext.drawText(client.textRenderer, Text.literal("Gain total: " + cachedTotalGain + "§f实"), moneyX + tabMoney, moneyY, yellow, true);
             moneyY += 12;
-            // Gains des minions
-            drawContext.drawText(client.textRenderer, Text.literal("Minion: " + cachedMinionTotal + "§f实"), moneyX + tabMoney, moneyY, color, true);
+            // Gains des sell chests (SC)
+            drawContext.drawText(client.textRenderer, Text.literal("SC: " + cachedMinionTotal + "§f实"), moneyX + tabMoney, moneyY, color, true);
             moneyY += 12;
             // Gains des ventes
             drawContext.drawText(client.textRenderer, Text.literal("Sell: " + cachedSellTotal + "§f实"), moneyX + tabMoney, moneyY, color, true);
@@ -188,14 +217,14 @@ public class OverlayRenderer {
             
             // Rendu de tout le groupe en une seule transformation
             // Titre avec chrono en petit à côté (même taille que les éléments)
-            drawContext.drawText(client.textRenderer, Text.literal("§6[Minions]"), minionX, minionY, orange, true);
-            int minionTitleWidth = client.textRenderer.getWidth("[Minions]");
+            drawContext.drawText(client.textRenderer, Text.literal("§6[SC]"), minionX, minionY, orange, true);
+            int minionTitleWidth = client.textRenderer.getWidth("[SC]");
             drawContext.drawText(client.textRenderer, Text.literal("§7(" + cachedMinionSessionTime + ")"), minionX + minionTitleWidth + 4, minionY, 0xAAAAAA, true);
             minionY += 12;
             
             int tab = 16;
             // Mettre en premier les statistiques avec le caractère 实
-            drawContext.drawText(client.textRenderer, Text.literal("Total: " + cachedTotalGains + "§f实"), minionX + tab, minionY, color, true);
+            drawContext.drawText(client.textRenderer, Text.literal("Total (SC): " + cachedTotalGains + "§f实"), minionX + tab, minionY, color, true);
             minionY += 12;
             drawContext.drawText(client.textRenderer, Text.literal("Moyenne: " + cachedAverageGain + "§f实"), minionX + tab, minionY, color, true);
             minionY += 12;

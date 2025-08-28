@@ -1,0 +1,45 @@
+### ObTracker / Minecraft mod common ignores
+
+# Build output
+/build/
+/out/
+
+# Gradle cache
+/.gradle/
+
+# Loom / generated caches and temporary build artifacts
+/.loom-cache/
+/devlibs/
+/generated/
+/tmp/
+
+# Local runtime config (generated at runtime, do not commit)
+/config/
+
+# IDE files
+/.idea/
+*.iml
+*.iws
+/.project
+/.classpath
+/.settings/
+/.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+/logs/
+*.log
+
+# Local properties
+/local.properties
+
+# Misc
+*.class
+
+# Keep these files tracked (do NOT ignore):
+# - build.gradle, settings.gradle, gradle.properties
+# - gradle/ (wrapper) and gradlew, gradlew.bat
+# - src/ and resources/

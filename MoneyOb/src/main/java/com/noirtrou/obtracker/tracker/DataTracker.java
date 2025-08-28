@@ -17,6 +17,10 @@ public class DataTracker {
             islandSessionStart = System.currentTimeMillis();
         }
         lastUpdate = System.currentTimeMillis();
+    // Mettre à jour le total journalier pour les niveaux d'île
+    ensureDailyDate();
+    dailyTotalIslandLevels += level;
+    saveDailyTotals();
     }
     public static int getTotalIslandLevel() {
         int sum = 0;
@@ -54,7 +58,6 @@ public class DataTracker {
     
     // Tracking des gains de vente (sell)
     private static final List<Double> sellGains = new ArrayList<>();
-    private static double sessionSellGain = 0;
     private static long sellSessionStart = System.currentTimeMillis();
     
     // Tracking session Argent (pour affichage avec chrono et reset)
@@ -143,18 +146,6 @@ public class DataTracker {
     }
     
     // Méthodes pour les gains de vente (sell)
-    public static void addSellGain(double gain) {
-        sellGains.add(gain);
-        sessionSellGain += gain;
-        // Démarrer la session sell au premier événement si pas encore démarrée
-        if (sellGains.size() == 1) {
-            sellSessionStart = System.currentTimeMillis();
-            // Démarrer aussi la session Argent au premier gain de vente
-            moneySessionStart = System.currentTimeMillis();
-        }
-        lastUpdate = System.currentTimeMillis();
-    }
-    
     public static double getTotalSellGains() {
         double sum = 0.0;
         for (int i = 0; i < sellGains.size(); i++) {
@@ -162,17 +153,17 @@ public class DataTracker {
         }
         return sum;
     }
-    
+
     public static double getSellGainPerHour() {
         double hours = getSellSessionDuration() / 3600.0;
         return hours > 0 ? getTotalSellGains() / hours : 0;
     }
-    
+
     public static double getSellGainPerMinute() {
         double minutes = getSellSessionDuration() / 60.0;
         return minutes > 0 ? getTotalSellGains() / minutes : 0;
     }
-    
+
     public static long getSellSessionDuration() {
         if (sellGains.isEmpty()) return 0;
         return (System.currentTimeMillis() - sellSessionStart) / 1000;
@@ -196,6 +187,79 @@ public class DataTracker {
     public static double getTotalGain() {
         return getTotalMinionGains() + getTotalSellGains();
     }
+
+    // --- Global daily aggregation ---
+    // Stocke les totaux journaliers (simplement remis à zéro manuellement ou via clearDailyTotals)
+    private static double dailyTotalMinionGains = 0.0;
+    private static double dailyTotalSellGains = 0.0;
+    // Totaux journaliers pour les niveaux d'île (somme des niveaux gagnés)
+    private static double dailyTotalIslandLevels = 0.0;
+    private static long dailyTotalsDate = getTodayDate();
+    private static final String DAILY_FILE_PATH = "config/obtracker-dailies.properties";
+
+    private static long getTodayDate() {
+        // Retourne la date au format YYYYMMDD
+        java.time.LocalDate d = java.time.LocalDate.now();
+        return d.getYear() * 10000L + d.getMonthValue() * 100L + d.getDayOfMonth();
+    }
+
+    private static void ensureDailyDate() {
+        long today = getTodayDate();
+        if (dailyTotalsDate != today) {
+            // nouveau jour -> reset
+            dailyTotalMinionGains = 0.0;
+            dailyTotalSellGains = 0.0;
+            dailyTotalIslandLevels = 0.0;
+            dailyTotalsDate = today;
+            // Sauvegarder l'état remis à zéro
+            saveDailyTotals();
+        }
+    }
+
+    // Sauvegarde/chargement des totaux journaliers sur disque pour persistance au redémarrage
+    private static void saveDailyTotals() {
+        try {
+            java.util.Properties props = new java.util.Properties();
+            props.setProperty("dailyTotalsDate", String.valueOf(dailyTotalsDate));
+            props.setProperty("dailyTotalMinionGains", String.valueOf(dailyTotalMinionGains));
+            props.setProperty("dailyTotalSellGains", String.valueOf(dailyTotalSellGains));
+            props.setProperty("dailyTotalIslandLevels", String.valueOf(dailyTotalIslandLevels));
+            java.nio.file.Path p = java.nio.file.Paths.get(DAILY_FILE_PATH);
+            java.nio.file.Files.createDirectories(p.getParent());
+            try (java.io.FileOutputStream out = new java.io.FileOutputStream(DAILY_FILE_PATH)) {
+                props.store(out, "ObTracker Daily Totals");
+            }
+        } catch (java.io.IOException e) {
+            System.err.println("Erreur lors de la sauvegarde des totaux journaliers: " + e.getMessage());
+        }
+    }
+
+    private static void loadDailyTotals() {
+        try {
+            java.nio.file.Path p = java.nio.file.Paths.get(DAILY_FILE_PATH);
+            if (!java.nio.file.Files.exists(p)) {
+                // fichier absent -> créer avec valeurs par défaut
+                saveDailyTotals();
+                return;
+            }
+            java.util.Properties props = new java.util.Properties();
+            try (java.io.FileInputStream in = new java.io.FileInputStream(DAILY_FILE_PATH)) {
+                props.load(in);
+            }
+            dailyTotalsDate = Long.parseLong(props.getProperty("dailyTotalsDate", String.valueOf(getTodayDate())));
+            dailyTotalMinionGains = Double.parseDouble(props.getProperty("dailyTotalMinionGains", "0.0"));
+            dailyTotalSellGains = Double.parseDouble(props.getProperty("dailyTotalSellGains", "0.0"));
+            dailyTotalIslandLevels = Double.parseDouble(props.getProperty("dailyTotalIslandLevels", "0.0"));
+            // Si la date est différente, ensureDailyDate fera le reset
+            ensureDailyDate();
+        } catch (Exception e) {
+            System.err.println("Erreur lors du chargement des totaux journaliers: " + e.getMessage());
+        }
+    }
+
+    
+
+    
     
     // Protection contre les doublons
     public static boolean isMessageAlreadyProcessed(String message) {
@@ -231,11 +295,28 @@ public class DataTracker {
             moneySessionStart = System.currentTimeMillis();
         }
         lastUpdate = System.currentTimeMillis();
+        // Mise à jour des totaux journaliers
+        ensureDailyDate();
+        dailyTotalMinionGains += gain;
+    saveDailyTotals();
     }
     public static void addMinionObject(int obj) {
         minionObjects.add(obj);
         sessionObjects += obj;
         lastUpdate = System.currentTimeMillis();
+    }
+
+    // Ajoute un gain de sell et met à jour l'aggregation journalière
+    public static void addSellGain(double gain) {
+    sellGains.add(gain);
+        if (sellGains.size() == 1) {
+            sellSessionStart = System.currentTimeMillis();
+            moneySessionStart = System.currentTimeMillis();
+        }
+        lastUpdate = System.currentTimeMillis();
+        ensureDailyDate();
+        dailyTotalSellGains += gain;
+    saveDailyTotals();
     }
     public static void clearHistory() {
         islandLevels.clear();
@@ -246,8 +327,7 @@ public class DataTracker {
         sessionGain = 0;
         sessionObjects = 0;
         minionSessionStart = System.currentTimeMillis();
-        sellGains.clear();
-        sessionSellGain = 0;
+    sellGains.clear();
         sellSessionStart = System.currentTimeMillis();
         lastUpdate = System.currentTimeMillis();
     }
@@ -269,17 +349,15 @@ public class DataTracker {
     }
     
     public static void clearSellHistory() {
-        sellGains.clear();
-        sessionSellGain = 0;
+    sellGains.clear();
         sellSessionStart = System.currentTimeMillis();
         lastUpdate = System.currentTimeMillis();
     }
     
     // Reset spécifique pour la catégorie Argent : remet à zéro les ventes et redémarre le chrono
     public static void clearMoneySession() {
-        // Reset uniquement les gains de vente (sell), pas les minions ni le solde total
-        sellGains.clear();
-        sessionSellGain = 0;
+    // Reset uniquement les gains de vente (sell), pas les minions ni le solde total
+    sellGains.clear();
         sellSessionStart = System.currentTimeMillis();
         // Redémarrer le chrono de la session Argent
         moneySessionStart = System.currentTimeMillis();
@@ -307,5 +385,16 @@ public class DataTracker {
         if (sessionObjects != 0) {
             sessionObjects = 0;
         }
+    }
+
+    // Fournit les totaux journaliers accessibles au renderer
+    public static double getDailyTotalMinionGains() { ensureDailyDate(); return dailyTotalMinionGains; }
+    public static double getDailyTotalSellGains() { ensureDailyDate(); return dailyTotalSellGains; }
+    public static double getDailyTotalIslandLevels() { ensureDailyDate(); return dailyTotalIslandLevels; }
+    // (combined option removed)
+
+    // Charger les totaux au chargement de la classe
+    static {
+        loadDailyTotals();
     }
 }
